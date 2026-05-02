@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Saci Sabido - Comparação de Números</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 40px;
+            padding: 24px;
+            max-width: 950px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        button {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 40px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: #4f46e5;
+            transform: scale(1.02);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .feedback {
+            margin: 15px auto;
+            padding: 10px;
+            border-radius: 40px;
+            font-weight: bold;
+        }
+
+        .feedback-sucesso {
+            background: #bbf7d0;
+            color: #166534;
+        }
+
+        .feedback-erro {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .numero-card {
+            background: #f1f5f9;
+            border-radius: 24px;
+            padding: 30px;
+            text-align: center;
+            font-size: 48px;
+            font-weight: bold;
+            font-family: monospace;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .operador-btn {
+            font-size: 32px;
+            font-weight: bold;
+            background: #f8fafc;
+            color: #1e293b;
+            border: 2px solid #e2e8f0;
+            padding: 20px 25px;
+            border-radius: 60px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .operador-btn:hover {
+            background: #e0e7ff;
+            border-color: #6366f1;
+            transform: scale(1.05);
+        }
+
+        .numeros-container {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-2 {
+            margin-top: 8px;
+        }
+
+        .mt-3 {
+            margin-top: 12px;
+        }
+
+        .regras {
+            background: #f1f5f9;
+            border-radius: 20px;
+            padding: 12px;
+            margin: 20px 0;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .nivel-badge {
+            background: #334155;
+            color: white;
+            border-radius: 30px;
+            padding: 5px 12px;
+            font-size: 14px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .info-sesi {
+            background: #fef9c3;
+            border-radius: 20px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #854d0e;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+    <!-- TELA INICIAL -->
+    <div id="telaInicial">
+        <h1>🧮 Comparação de Números Naturais</h1>
+        <p>Escolha o símbolo correto: maior, menor ou igual.</p>
+        
+        <!-- Informações do Currículo SESI-SP -->
+        <div class="info-sesi" id="curriculoInfo">
+            📚 Currículo SESI-SP | Habilidade: <strong id="habilidadeDisplay">EF1a5.MAT.1.03</strong><br>
+            🎯 Competência 1: Desenvolver o pensamento numérico<br>
+            📖 BNCC: Comparar e ordenar números naturais
+        </div>
+
+        <div class="regras">
+            <strong>📋 Como jogar:</strong><br>
+            • Você verá dois números.<br>
+            • Escolha o operador correto: <strong>></strong> (maior), <strong>&lt;</strong> (menor) ou <strong>=</strong> (igual).<br>
+            • A cada acerto, você avança de nível e os números ficam maiores!<br>
+            • Cada acerto vale 10 pontos; cada erro desconta 5 pontos.<br>
+            • Complete 10 perguntas para finalizar a rodada.
+        </div>
+        
+        <button id="btnIniciar">🚀 INICIAR JOGO</button>
+        <div id="statusConexao" class="text-center mt-2" style="font-size:12px;"></div>
+    </div>
+
+    <!-- TELA DO JOGO -->
+    <div id="telaJogo" class="hidden">
+        <div style="display:flex; justify-content:space-between; background:#f8fafc; border-radius:30px; padding:12px 20px; margin-bottom:25px; gap:15px; flex-wrap:wrap;">
+            <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
+                <span style="font-size:12px; text-transform:uppercase; color:#64748b;">PONTOS</span>
+                <div style="font-size:28px; font-weight:800;" id="pontos">0</div>
+            </div>
+            <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
+                <span style="font-size:12px; text-transform:uppercase; color:#64748b;">PERGUNTAS</span>
+                <div style="font-size:28px; font-weight:800;" id="perguntaAtual">0</div>
+            </div>
+            <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
+                <span style="font-size:12px; text-transform:uppercase; color:#64748b;">NÍVEL</span>
+                <div style="font-size:28px; font-weight:800;" id="nivelAtual">1</div>
+            </div>
+        </div>
+
+        <div id="areaJogo">
+            <div class="numeros-container">
+                <div class="numero-card" id="numeroEsquerda">0</div>
+                <div id="operadorEscolha" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                    <button class="operador-btn" id="opMaior">&gt;</button>
+                    <button class="operador-btn" id="opMenor">&lt;</button>
+                    <button class="operador-btn" id="opIgual">=</button>
+                </div>
+                <div class="numero-card" id="numeroDireita">0</div>
+            </div>
+        </div>
+        <div id="feedbackJogo" class="feedback"></div>
+        <button id="btnSair">🚪 SAIR</button>
+    </div>
+
+    <!-- TELA FINAL -->
+    <div id="telaFinal" class="hidden">
+        <h1>🏆 Fim de jogo!</h1>
+        <div style="background:#eef2ff; padding:20px; border-radius:30px; margin:20px 0;">
+            <p><strong>Pontuação final:</strong> <span id="finalPontos">0</span></p>
+            <p><strong>Acertos:</strong> <span id="finalAcertos">0</span></p>
+            <p><strong>Erros:</strong> <span id="finalErros">0</span></p>
+            <p><strong>Nível máximo alcançado:</strong> <span id="finalNivel">1</span></p>
+            <p><strong>Habilidade trabalhada:</strong> <span id="finalHabilidade">EF1a5.MAT.1.03</span></p>
+            <div id="rankingContainer" class="hidden mt-2 pt-2" style="border-top:1px solid #c7d2fe;">
+                <p class="font-bold">🏅 Posição na turma</p>
+                <p class="text-2xl font-black" id="rankingPos">--</p>
+                <p class="text-xs" id="rankingTotal"></p>
+            </div>
+            <div id="msgSalvo" class="text-sm mt-2"></div>
+        </div>
+        <button id="btnNovamente">🔄 JOGAR NOVAMENTE</button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    // ==================== CONFIGURAÇÕES DO SUPABASE ====================
+    const SUPABASE_URL = 'https://qmcqffnawtfaenyziwsn.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY3FmZm5hd3RmYWVueXppd3NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNTM5NTMsImV4cCI6MjA4OTcyOTk1M30._CjaNoeJeQp-8s8Jt-dk3bJfktdEV97R5LhLnWgYrNc';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ==================== CURRRÍCULO SESI-SP E BNCC ====================
+    // Mapeamento de habilidades por ano e conteúdo
+    const HABILIDADES_SESI = {
+        // Anos Iniciais (1º ao 5º ano)
+        'EF1a5.MAT.1.03': {
+            descricao: 'Comparar e ordenar números naturais em diferentes contextos',
+            competencia: 'Desenvolver o pensamento numérico',
+            bncc: '(EF01MA01) - Utilizar números naturais como indicador de quantidade ou de ordem em diferentes situações cotidianas',
+            anos: '1º ao 5º ano',
+            area: 'Números'
+        },
+        'EF.01.MAT.1.16': {
+            descricao: 'Comparar números naturais, em contextos variados, com ou sem suporte da reta numérica',
+            competencia: 'Desenvolver o pensamento numérico',
+            bncc: '(EF01MA01) - Comparar números naturais',
+            anos: '1º ano',
+            area: 'Números'
+        },
+        'EF.02.MAT.1.31': {
+            descricao: 'Comparar quantidade de objetos de conjunto utilizando diferentes estratégias',
+            competencia: 'Desenvolver o pensamento numérico',
+            bncc: '(EF02MA01) - Comparar e ordenar números naturais',
+            anos: '2º ano',
+            area: 'Números'
+        },
+        'EF.03.MAT.1.49': {
+            descricao: 'Relacionar números naturais a pontos na reta numérica para ordenar',
+            competencia: 'Desenvolver o pensamento numérico',
+            bncc: '(EF03MA01) - Ler, escrever e comparar números naturais',
+            anos: '3º ano',
+            area: 'Números'
+        },
+        'EF.04.MAT.1.67': {
+            descricao: 'Reconhecer e ordenar (maior, menor, igual) os números fracionários e decimais',
+            competencia: 'Desenvolver o pensamento numérico',
+            bncc: '(EF04MA01) - Ler, escrever e ordenar números naturais e números racionais',
+            anos: '4º ano',
+            area: 'Números'
+        },
+        'EF.05.MAT.1.79': {
+            descricao: 'Comparar e ordenar números racionais identificando as quantidades representadas',
+            competencia: 'Desenvolver o pensamento numérico',
+            bncc: '(EF05MA01) - Ler, escrever e ordenar números racionais',
+            anos: '5º ano',
+            area: 'Números'
+        },
+        // Anos Finais (6º ao 9º ano)
+        'EF.06.MAT.1.09': {
+            descricao: 'Comparar e ordenar números fracionários, identificando frações equivalentes',
+            competencia: 'Compreender os significados e propriedades dos números',
+            bncc: '(EF06MA07) - Compreender, comparar e ordenar frações',
+            anos: '6º ano',
+            area: 'Números'
+        },
+        'EF.07.MAT.1.30': {
+            descricao: 'Representar, comparar e ordenar números inteiros',
+            competencia: 'Compreender os significados e propriedades dos números',
+            bncc: '(EF07MA03) - Comparar e ordenar números inteiros',
+            anos: '7º ano',
+            area: 'Números'
+        }
+    };
+
+    // Função para determinar a habilidade correta baseada nos parâmetros
+    function determinarHabilidade(anoParam, conteudo = 'comparacao_numeros') {
+        // Mapeamento de anos para habilidades padrão
+        const mapaHabilidades = {
+            '1': 'EF.01.MAT.1.16',
+            '2': 'EF.02.MAT.1.31',
+            '3': 'EF.03.MAT.1.49',
+            '4': 'EF.04.MAT.1.67',
+            '5': 'EF.05.MAT.1.79',
+            '6': 'EF.06.MAT.1.09',
+            '7': 'EF.07.MAT.1.30',
+            '8': 'EF.07.MAT.1.30',
+            '9': 'EF.07.MAT.1.30',
+            '1a5': 'EF1a5.MAT.1.03'
+        };
+        
+        // Se o ano foi passado como parâmetro, usa ele
+        if (anoParam && mapaHabilidades[anoParam]) {
+            return mapaHabilidades[anoParam];
+        }
+        
+        // Habilidade padrão para anos iniciais
+        return 'EF1a5.MAT.1.03';
+    }
+
+    // ==================== PARÂMETROS DA URL ====================
+    const urlParams = new URLSearchParams(window.location.search);
+    const alunoId = urlParams.get('aluno_id');
+    const jogoId = urlParams.get('jogo_id') || 'comparacao_numeros';
+    const turmaId = urlParams.get('turma_id');
+    const modoTeste = urlParams.get('modo_teste') === 'true';
+    const anoParam = urlParams.get('ano'); // Parâmetro opcional: 1,2,3,4,5,6,7,8,9
+    const habilidadeParam = urlParams.get('habilidade'); // Parâmetro opcional para forçar habilidade
+    
+    // Determina a habilidade a ser usada
+    let habilidadeAtual = habilidadeParam || determinarHabilidade(anoParam);
+    
+    // Valida se a habilidade existe no mapeamento
+    if (!HABILIDADES_SESI[habilidadeAtual]) {
+        console.warn(`Habilidade ${habilidadeAtual} não encontrada, usando padrão`);
+        habilidadeAtual = 'EF1a5.MAT.1.03';
+    }
+    
+    const infoHabilidade = HABILIDADES_SESI[habilidadeAtual];
+    
+    // Atualiza a interface com as informações do currículo
+    document.getElementById('habilidadeDisplay').textContent = habilidadeAtual;
+    if (document.getElementById('finalHabilidade')) {
+        document.getElementById('finalHabilidade').textContent = `${habilidadeAtual} - ${infoHabilidade.descricao}`;
+    }
+    
+    // Adiciona tooltip com informações completas
+    const curriculoDiv = document.getElementById('curriculoInfo');
+    if (curriculoDiv) {
+        curriculoDiv.title = `${infoHabilidade.descricao}\nCompetência: ${infoHabilidade.competencia}\nBNCC: ${infoHabilidade.bncc}\nAnos: ${infoHabilidade.anos}`;
+    }
+
+    // Exibe status da conexão
+    const statusDiv = document.getElementById('statusConexao');
+    if (modoTeste) {
+        statusDiv.innerHTML = '🔧 Modo teste - pontuação NÃO será salva';
+        statusDiv.style.color = '#f59e0b';
+    } else if (!alunoId) {
+        statusDiv.innerHTML = '⚠️ Parâmetros ausentes - pontuação NÃO será salva';
+        statusDiv.style.color = '#e53e3e';
+    } else {
+        statusDiv.innerHTML = `✅ Conectado - Habilidade: ${habilidadeAtual}`;
+        statusDiv.style.color = '#10b981';
+    }
+
+    // ==================== VARIÁVEIS DO JOGO ====================
+    let pontuacao = 0;
+    let acertos = 0;
+    let erros = 0;
+    let jogoAtivo = false;
+    let tempoInicio = null;
+    let tempoDecorrido = 0;
+    let intervalo = null;
+    let detalhesErros = [];
+    let numeroEsquerda = 0;
+    let numeroDireita = 0;
+    let operadorCorreto = '';
+    let nivel = 1;
+    let perguntasRespondidas = 0;
+    const TOTAL_PERGUNTAS = 10;
+
+    function getMaxNumero(nivel) {
+        // Baseado no ano escolar, ajusta a dificuldade
+        const ano = parseInt(anoParam) || 3;
+        if (ano <= 2) {
+            if (nivel <= 2) return 20;
+            if (nivel <= 4) return 50;
+            return 100;
+        } else if (ano <= 4) {
+            if (nivel <= 2) return 50;
+            if (nivel <= 4) return 100;
+            if (nivel <= 6) return 500;
+            return 1000;
+        } else {
+            if (nivel <= 2) return 100;
+            if (nivel <= 4) return 500;
+            if (nivel <= 6) return 1000;
+            return 10000;
+        }
+    }
+
+    function gerarPergunta() {
+        const maxNum = getMaxNumero(nivel);
+        numeroEsquerda = Math.floor(Math.random() * (maxNum + 1));
+        numeroDireita = Math.floor(Math.random() * (maxNum + 1));
+
+        if (numeroEsquerda > numeroDireita) operadorCorreto = '>';
+        else if (numeroEsquerda < numeroDireita) operadorCorreto = '<';
+        else operadorCorreto = '=';
+
+        document.getElementById('numeroEsquerda').textContent = numeroEsquerda;
+        document.getElementById('numeroDireita').textContent = numeroDireita;
+        document.getElementById('nivelAtual').textContent = nivel;
+        document.getElementById('perguntaAtual').textContent = perguntasRespondidas;
+    }
+
+    function atualizarUI() {
+        document.getElementById('pontos').textContent = Math.floor(pontuacao);
+    }
+
+    function mostrarFeedback(mensagem, tipo) {
+        const feedbackDiv = document.getElementById('feedbackJogo');
+        feedbackDiv.textContent = mensagem;
+        feedbackDiv.className = 'feedback';
+        if (tipo === 'sucesso') feedbackDiv.classList.add('feedback-sucesso');
+        else if (tipo === 'erro') feedbackDiv.classList.add('feedback-erro');
+        setTimeout(() => {
+            if (feedbackDiv.textContent === mensagem) {
+                feedbackDiv.textContent = '';
+                feedbackDiv.className = 'feedback';
+            }
+        }, 2000);
+    }
+
+    function iniciarCronometro() {
+        if (intervalo) clearInterval(intervalo);
+        intervalo = setInterval(() => {
+            if (!jogoAtivo) return;
+            tempoDecorrido = Math.floor((Date.now() - tempoInicio) / 1000);
+        }, 1000);
+    }
+
+    function pararCronometro() {
+        if (intervalo) clearInterval(intervalo);
+        intervalo = null;
+        if (tempoInicio) {
+            tempoDecorrido = Math.floor((Date.now() - tempoInicio) / 1000);
+        }
+    }
+
+    // ==================== SALVAMENTO NO SUPABASE ====================
+    async function salvarResultado() {
+        if (modoTeste) {
+            const msgDiv = document.getElementById('msgSalvo');
+            if (msgDiv) msgDiv.innerHTML = '🔧 Modo teste - dados não salvos';
+            return;
+        }
+        if (!alunoId) {
+            const msgDiv = document.getElementById('msgSalvo');
+            if (msgDiv) msgDiv.innerHTML = '⚠️ Parâmetros ausentes - não salvo';
+            return;
+        }
+        
+        const dados = {
+            aluno_id: alunoId,
+            jogo_id: jogoId,
+            turma_id: turmaId,
+            acertos: acertos,
+            erros: erros,
+            tempo_segundos: tempoDecorrido,
+            total_questoes: TOTAL_PERGUNTAS,
+            habilidade_bncc: habilidadeAtual,
+            detalhes_erros: detalhesErros.slice(0, 20),
+            // Campos adicionais para o currículo SESI-SP
+            competencia_sesi: infoHabilidade.competencia,
+            ano_referencia: anoParam || '1a5'
+        };
+        
+        console.log("Salvando resultado com habilidade:", habilidadeAtual);
+        
+        const { error } = await supabaseClient.from('resultados').insert([dados]);
+        const msgDiv = document.getElementById('msgSalvo');
+        if (error) {
+            console.error("Erro ao salvar:", error);
+            if (msgDiv) msgDiv.innerHTML = `❌ Erro ao salvar: ${error.message}`;
+        } else {
+            if (msgDiv) msgDiv.innerHTML = '✅ Pontuação registrada com sucesso!';
+        }
+    }
+
+    // ==================== RANKING ====================
+    async function buscarRanking() {
+        if (modoTeste || !turmaId) return;
+        try {
+            const { data, error } = await supabaseClient
+                .from('resultados')
+                .select('aluno_id, acertos, tempo_segundos')
+                .eq('turma_id', turmaId)
+                .eq('jogo_id', jogoId)
+                .eq('habilidade_bncc', habilidadeAtual);
+            if (error) throw error;
+            if (!data || data.length === 0) return;
+
+            const melhores = new Map();
+            for (const reg of data) {
+                const existing = melhores.get(reg.aluno_id);
+                if (!existing || reg.acertos > existing.acertos ||
+                    (reg.acertos === existing.acertos && reg.tempo_segundos < existing.tempo)) {
+                    melhores.set(reg.aluno_id, { acertos: reg.acertos, tempo: reg.tempo_segundos });
+                }
+            }
+            const lista = Array.from(melhores.entries()).map(([aluno, val]) => ({ aluno, ...val }));
+            lista.sort((a, b) => {
+                if (a.acertos !== b.acertos) return b.acertos - a.acertos;
+                return a.tempo - b.tempo;
+            });
+            let posicao = 1;
+            for (const item of lista) {
+                if (item.acertos > acertos || (item.acertos === acertos && item.tempo < tempoDecorrido)) posicao++;
+                else break;
+            }
+            document.getElementById('rankingPos').textContent = `${posicao}º`;
+            document.getElementById('rankingTotal').textContent = `entre ${lista.length} alunos (habilidade: ${habilidadeAtual})`;
+            document.getElementById('rankingContainer').classList.remove('hidden');
+        } catch(e) {
+            console.error("Erro no ranking:", e);
+        }
+    }
+
+    // ==================== FINALIZAR JOGO ====================
+    async function finalizarJogo() {
+        if (!jogoAtivo) return;
+        jogoAtivo = false;
+        pararCronometro();
+        document.getElementById('finalPontos').textContent = Math.floor(pontuacao);
+        document.getElementById('finalAcertos').textContent = acertos;
+        document.getElementById('finalErros').textContent = erros;
+        document.getElementById('finalNivel').textContent = nivel;
+        await salvarResultado();
+        await buscarRanking();
+        document.getElementById('telaJogo').classList.add('hidden');
+        document.getElementById('telaFinal').classList.remove('hidden');
+    }
+
+    // ==================== REGISTRO DE ACERTOS/ERROS ====================
+    function registrarAcerto(pontosGanhos = 10) {
+        if (!jogoAtivo) return;
+        pontuacao += pontosGanhos;
+        acertos++;
+        atualizarUI();
+        mostrarFeedback(`✅ Correto! +${pontosGanhos} pontos`, 'sucesso');
+        
+        if (acertos % 3 === 0 && nivel < 20) {
+            nivel++;
+            mostrarFeedback(`📈 Você subiu para o nível ${nivel}!`, 'sucesso');
+        }
+    }
+
+    function registrarErro(erroDetalhe = null) {
+        if (!jogoAtivo) return;
+        erros++;
+        pontuacao = Math.max(0, pontuacao - 5);
+        atualizarUI();
+        if (erroDetalhe) detalhesErros.push(erroDetalhe);
+        mostrarFeedback(`❌ Errado! -5 pontos. O correto era ${operadorCorreto}.`, 'erro');
+    }
+
+    function responderOperador(operadorEscolhido) {
+        if (!jogoAtivo) return;
+        const acertou = (operadorEscolhido === operadorCorreto);
+        
+        if (acertou) {
+            registrarAcerto(10);
+        } else {
+            const detalhe = {
+                num1: numeroEsquerda,
+                num2: numeroDireita,
+                respostaEscolhida: operadorEscolhido,
+                respostaCorreta: operadorCorreto,
+                nivel: nivel,
+                habilidade: habilidadeAtual
+            };
+            registrarErro(detalhe);
+        }
+
+        perguntasRespondidas++;
+        document.getElementById('perguntaAtual').textContent = perguntasRespondidas;
+
+        if (perguntasRespondidas >= TOTAL_PERGUNTAS) {
+            finalizarJogo();
+        } else {
+            gerarPergunta();
+        }
+    }
+
+    function iniciarJogo() {
+        pontuacao = 0;
+        acertos = 0;
+        erros = 0;
+        nivel = 1;
+        perguntasRespondidas = 0;
+        detalhesErros = [];
+        jogoAtivo = true;
+        tempoInicio = Date.now();
+        tempoDecorrido = 0;
+        atualizarUI();
+        gerarPergunta();
+        iniciarCronometro();
+        
+        document.getElementById('telaInicial').classList.add('hidden');
+        document.getElementById('telaJogo').classList.remove('hidden');
+        document.getElementById('telaFinal').classList.add('hidden');
+        document.getElementById('rankingContainer').classList.add('hidden');
+        
+        const feedbackDiv = document.getElementById('feedbackJogo');
+        if (feedbackDiv) feedbackDiv.textContent = '';
+    }
+
+    // ==================== EVENTOS ====================
+    document.getElementById('btnIniciar').onclick = iniciarJogo;
+    document.getElementById('btnSair').onclick = () => {
+        if (jogoAtivo && confirm("Deseja sair? O progresso será perdido.")) {
+            finalizarJogo();
+        } else if (!jogoAtivo) {
+            document.getElementById('telaJogo').classList.add('hidden');
+            document.getElementById('telaInicial').classList.remove('hidden');
+        }
+    };
+    document.getElementById('btnNovamente').onclick = () => {
+        document.getElementById('telaFinal').classList.add('hidden');
+        document.getElementById('telaInicial').classList.remove('hidden');
+    };
+    document.getElementById('opMaior').onclick = () => responderOperador('>');
+    document.getElementById('opMenor').onclick = () => responderOperador('<');
+    document.getElementById('opIgual').onclick = () => responderOperador('=');
+</script>
+</body>
+</html>
