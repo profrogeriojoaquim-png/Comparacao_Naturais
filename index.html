@@ -145,13 +145,26 @@
             cursor: pointer;
             margin-top: 20px;
         }
+        
+        .estrelas {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        .estrela {
+            font-size: 28px;
+            color: #cbd5e1;
+        }
+        .estrela.ativa {
+            color: #fbbf24;
+            text-shadow: 0 0 2px goldenrod;
+        }
     </style>
 </head>
 <body>
 
-<div id="app">
-    <!-- O conteúdo será carregado dinamicamente -->
-</div>
+<div id="app"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -160,12 +173,12 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY3FmZm5hd3RmYWVueXppd3NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNTM5NTMsImV4cCI6MjA4OTcyOTk1M30._CjaNoeJeQp-8s8Jt-dk3bJfktdEV97R5LhLnWgYrNc';
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // ==================== PARÂMETROS DA URL ====================
+    // ==================== PARÂMETROS DA URL (PADRÃO DO SISTEMA) ====================
     const urlParams = new URLSearchParams(window.location.search);
-    const jogoSlug = urlParams.get('jogo_slug');
     const alunoId = urlParams.get('aluno_id');
+    const jogoId = urlParams.get('jogo_id');
     const turmaId = urlParams.get('turma_id');
-    const escolaId = urlParams.get('escola_id');
+    const accessToken = urlParams.get('token');
     const modoTeste = urlParams.get('modo_teste') === 'true';
 
     // ==================== VARIÁVEIS DO JOGO ====================
@@ -182,17 +195,18 @@
     let operadorCorreto = '';
     let nivel = 1;
     let perguntasRespondidas = 0;
-    let jogoId = null;
+    let jogoIdAtual = jogoId;
+    let jogoNome = '';
     const TOTAL_PERGUNTAS = 10;
 
-    // ==================== FUNÇÃO DE VERIFICAÇÃO DE ACESSO ====================
+    // ==================== FUNÇÃO DE VERIFICAÇÃO DE ACESSO (PADRÃO SISTEMA) ====================
     async function verificarAcessoJogo() {
         if (modoTeste) {
             console.log('🔧 Modo teste - acesso liberado sem verificação');
             return true;
         }
         
-        if (!jogoSlug || !turmaId || !escolaId) {
+        if (!alunoId || !jogoId || !turmaId) {
             mostrarErroAcesso('❌ Link inválido. Faltam parâmetros necessários. Contate seu professor.');
             return false;
         }
@@ -201,8 +215,8 @@
             // Buscar informações do jogo
             const { data: jogo, error: jogoError } = await supabaseClient
                 .from('jogos')
-                .select('id, nome, segmento')
-                .eq('slug', jogoSlug)
+                .select('id, nome')
+                .eq('id', jogoId)
                 .single();
             
             if (jogoError || !jogo) {
@@ -210,38 +224,48 @@
                 return false;
             }
             
-            jogoId = jogo.id;
+            jogoNome = jogo.nome;
+            jogoIdAtual = jogo.id;
             
-            // Verificar se o jogo está ativo para a turma
-            const { data: jogoTurma, error: turmaError } = await supabaseClient
-                .from('jogos_turma')
-                .select('status, data_inicio, data_fim')
-                .eq('turma_id', turmaId)
-                .eq('jogo_id', jogoId)
+            // Verificar se o aluno existe e está ativo
+            const { data: aluno, error: alunoError } = await supabaseClient
+                .from('alunos')
+                .select('id, nome_aluno, ativo, turma_id')
+                .eq('id', alunoId)
+                .eq('ativo', true)
                 .single();
             
-            if (turmaError || !jogoTurma) {
-                mostrarErroAcesso('❌ Este jogo não foi atribuído à sua turma pelo professor.');
+            if (alunoError || !aluno) {
+                mostrarErroAcesso('❌ Aluno não encontrado ou inativo. Contate seu professor.');
                 return false;
             }
             
-            // Verificar status
-            const hoje = new Date().toISOString().split('T')[0];
-            
-            if (jogoTurma.status === 'inativo') {
-                mostrarErroAcesso('❌ Este jogo está bloqueado pelo professor.');
+            // Verificar se a turma do aluno corresponde à turma informada
+            if (aluno.turma_id !== turmaId) {
+                mostrarErroAcesso('❌ Turma não corresponde ao aluno. Contate seu professor.');
                 return false;
             }
             
-            if (jogoTurma.status === 'agendado') {
+            // Verificar se o jogo está atribuído à turma (opcional, mas recomendado)
+            const { data: jogoTurma, error: turmaError } = await supabaseClient
+                .from('turma_atividades')
+                .select('id, data_inicio, data_fim')
+                .eq('turma_id', turmaId)
+                .eq('jogo_id', jogoId)
+                .maybeSingle();
+            
+            // Se não encontrar registro, ainda permite jogar (modo livre)
+            if (turmaError) {
+                console.log('⚠️ Jogo não atribuído à turma, mas permitindo acesso livre');
+            } else if (jogoTurma) {
+                // Verificar datas se existirem
+                const hoje = new Date().toISOString().split('T')[0];
                 if (jogoTurma.data_inicio && hoje < jogoTurma.data_inicio) {
-                    const dataFormatada = formatarData(jogoTurma.data_inicio);
-                    mostrarErroAcesso(`📅 Este jogo estará disponível a partir de ${dataFormatada}`);
+                    mostrarErroAcesso(`📅 Este jogo estará disponível a partir de ${formatarData(jogoTurma.data_inicio)}`);
                     return false;
                 }
                 if (jogoTurma.data_fim && hoje > jogoTurma.data_fim) {
-                    const dataFormatada = formatarData(jogoTurma.data_fim);
-                    mostrarErroAcesso(`⏰ O prazo para este jogo encerrou em ${dataFormatada}`);
+                    mostrarErroAcesso(`⏰ O prazo para este jogo encerrou em ${formatarData(jogoTurma.data_fim)}`);
                     return false;
                 }
             }
@@ -276,11 +300,10 @@
     async function registrarAcessoPermitido() {
         try {
             await supabaseClient.from('logs_acesso_jogos').insert([{
-                aluno_id: alunoId || null,
-                jogo_id: jogoId,
+                aluno_id: alunoId,
+                jogo_id: jogoIdAtual,
                 turma_id: turmaId,
                 acesso_liberado: true,
-                ip: null,
                 timestamp: new Date()
             }]);
         } catch(e) {
@@ -289,6 +312,24 @@
     }
 
     // ==================== FUNÇÕES DO JOGO ====================
+    function calcularEstrelas() {
+        if (erros === 0 && tempoDecorrido <= 30) return 3;
+        if (erros <= 2 && tempoDecorrido <= 60) return 2;
+        return 1;
+    }
+
+    function exibirEstrelas(qtd) {
+        const estrelasContainer = document.getElementById('estrelasContainer');
+        if (!estrelasContainer) return;
+        for (let i = 1; i <= 3; i++) {
+            const estrela = document.getElementById(`estrela${i}`);
+            if (estrela) {
+                if (i <= qtd) estrela.classList.add('ativa');
+                else estrela.classList.remove('ativa');
+            }
+        }
+    }
+
     function getMaxNumero(nivel) {
         if (nivel <= 2) return 20;
         if (nivel <= 4) return 50;
@@ -314,6 +355,8 @@
 
     function atualizarUI() {
         document.getElementById('pontos').textContent = Math.floor(pontuacao);
+        document.getElementById('acertos').textContent = acertos;
+        document.getElementById('erros').textContent = erros;
     }
 
     function mostrarFeedback(mensagem, tipo) {
@@ -335,6 +378,11 @@
         intervalo = setInterval(() => {
             if (!jogoAtivo) return;
             tempoDecorrido = Math.floor((Date.now() - tempoInicio) / 1000);
+            const minutos = Math.floor(tempoDecorrido / 60);
+            const segundos = tempoDecorrido % 60;
+            const tempoFormatado = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+            const tempoEl = document.getElementById('tempo');
+            if (tempoEl) tempoEl.textContent = tempoFormatado;
         }, 1000);
     }
 
@@ -347,11 +395,15 @@
     }
 
     async function salvarResultado() {
-        if (modoTeste || !alunoId) return;
+        if (modoTeste || !alunoId || !jogoIdAtual || !turmaId) {
+            const msgDiv = document.getElementById('msgSalvo');
+            if (msgDiv) msgDiv.innerHTML = modoTeste ? '🔧 Modo teste - dados não salvos' : '⚠️ Parâmetros ausentes - não salvo';
+            return;
+        }
         
         const dados = {
             aluno_id: alunoId,
-            jogo_id: jogoId,
+            jogo_id: jogoIdAtual,
             turma_id: turmaId,
             acertos: acertos,
             erros: erros,
@@ -361,19 +413,35 @@
             detalhes_erros: detalhesErros.slice(0, 20)
         };
         
-        const { error } = await supabaseClient.from('resultados').insert([dados]);
-        if (error) console.error("Erro ao salvar:", error);
+        console.log('Salvando resultado:', dados);
+        
+        const { data, error } = await supabaseClient.from('resultados').insert([dados]).select();
+        const msgDiv = document.getElementById('msgSalvo');
+        if (error) {
+            console.error('Erro ao salvar:', error);
+            msgDiv.innerHTML = `❌ Erro ao salvar: ${error.message}`;
+        } else {
+            console.log('Salvo com sucesso:', data);
+            msgDiv.innerHTML = '✅ Pontuação registrada!';
+        }
     }
 
     async function finalizarJogo() {
         if (!jogoAtivo) return;
         jogoAtivo = false;
         pararCronometro();
+        
+        const estrelas = calcularEstrelas();
+        exibirEstrelas(estrelas);
+        
         document.getElementById('finalPontos').textContent = Math.floor(pontuacao);
         document.getElementById('finalAcertos').textContent = acertos;
         document.getElementById('finalErros').textContent = erros;
         document.getElementById('finalNivel').textContent = nivel;
+        document.getElementById('finalTempo').textContent = `${Math.floor(tempoDecorrido / 60)}:${(tempoDecorrido % 60).toString().padStart(2, '0')}`;
+        
         await salvarResultado();
+        
         document.getElementById('telaJogo').classList.add('hidden');
         document.getElementById('telaFinal').classList.remove('hidden');
     }
@@ -447,6 +515,16 @@
         document.getElementById('feedbackJogo').textContent = '';
     }
 
+    function fecharAba() {
+        window.close();
+        setTimeout(() => {
+            const msgDiv = document.getElementById('mensagemAba');
+            if (msgDiv) {
+                msgDiv.innerHTML = "⚠️ Seu navegador não permitiu fechar esta aba. Feche manualmente.";
+            }
+        }, 200);
+    }
+
     // ==================== RENDERIZAR TELA INICIAL ====================
     async function carregarJogo() {
         const acessoLiberado = await verificarAcessoJogo();
@@ -464,7 +542,7 @@
                     <p>Escolha o símbolo correto: maior, menor ou igual.</p>
                     
                     <div class="info-sesi">
-                        📚 Currículo SESI-SP | Habilidade: <strong>EF1a5.MAT.1.03</strong><br>
+                        📚 Habilidade: <strong>EF1a5.MAT.1.03</strong><br>
                         🎯 Comparar e ordenar números naturais em diferentes contextos
                     </div>
 
@@ -479,24 +557,33 @@
                     
                     <button id="btnIniciar">🚀 INICIAR JOGO</button>
                     <div id="statusConexao" class="text-center mt-2" style="font-size:12px;">
-                        ${modoTeste ? '🔧 Modo teste' : '✅ Conectado'}
+                        ${modoTeste ? '🔧 Modo teste' : (alunoId && jogoId ? '✅ Conectado' : '⚠️ Sem parâmetros')}
                     </div>
                 </div>
 
                 <div id="telaJogo" class="hidden">
                     <div style="display:flex; justify-content:space-between; background:#f8fafc; border-radius:30px; padding:12px 20px; margin-bottom:25px; gap:15px; flex-wrap:wrap;">
                         <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
-                            <span style="font-size:12px;">PONTOS</span>
+                            <span style="font-size:12px;">⭐ PONTOS</span>
                             <div style="font-size:28px; font-weight:800;" id="pontos">0</div>
                         </div>
                         <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
-                            <span style="font-size:12px;">PERGUNTA</span>
-                            <div style="font-size:28px; font-weight:800;" id="perguntaAtual">1</div>
+                            <span style="font-size:12px;">✅ ACERTOS</span>
+                            <div style="font-size:28px; font-weight:800;" id="acertos">0</div>
                         </div>
                         <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
-                            <span style="font-size:12px;">NÍVEL</span>
-                            <div style="font-size:28px; font-weight:800;" id="nivelAtual">1</div>
+                            <span style="font-size:12px;">❌ ERROS</span>
+                            <div style="font-size:28px; font-weight:800;" id="erros">0</div>
                         </div>
+                        <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
+                            <span style="font-size:12px;">⏱️ TEMPO</span>
+                            <div style="font-size:28px; font-weight:800;" id="tempo">00:00</div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; background:#f8fafc; border-radius:30px; padding:8px 16px; margin-bottom:20px;">
+                        <div><strong>Nível:</strong> <span id="nivelAtual">1</span></div>
+                        <div><strong>Pergunta:</strong> <span id="perguntaAtual">1</span> / ${TOTAL_PERGUNTAS}</div>
                     </div>
 
                     <div class="numeros-container">
@@ -510,19 +597,27 @@
                     </div>
                     
                     <div id="feedbackJogo" class="feedback"></div>
-                    <button id="btnSair">🚪 SAIR</button>
+                    <button id="btnSair" class="btn-fechar" style="background:#10b981;">🔒 SAIR</button>
                 </div>
 
                 <div id="telaFinal" class="hidden">
-                    <h1>🏆 Fim de jogo!</h1>
+                    <h1>🏆 Parabéns!</h1>
                     <div style="background:#eef2ff; padding:20px; border-radius:30px; margin:20px 0;">
                         <p><strong>Pontuação final:</strong> <span id="finalPontos">0</span></p>
-                        <p><strong>Acertos:</strong> <span id="finalAcertos">0</span></p>
+                        <p><strong>Acertos:</strong> <span id="finalAcertos">0</span> / ${TOTAL_PERGUNTAS}</p>
                         <p><strong>Erros:</strong> <span id="finalErros">0</span></p>
                         <p><strong>Nível máximo:</strong> <span id="finalNivel">1</span></p>
+                        <p><strong>Tempo:</strong> <span id="finalTempo">00:00</span></p>
+                        <div class="estrelas" id="estrelasContainer">
+                            <span class="estrela" id="estrela1">★</span>
+                            <span class="estrela" id="estrela2">★</span>
+                            <span class="estrela" id="estrela3">★</span>
+                        </div>
                         <div id="msgSalvo" class="text-sm mt-2"></div>
                     </div>
                     <button id="btnNovamente">🔄 JOGAR NOVAMENTE</button>
+                    <button id="btnFecharAba" class="btn-fechar" style="background:#10b981;">🚪 FECHAR ESTA ABA</button>
+                    <div id="mensagemAba" class="text-sm mt-2"></div>
                 </div>
             </div>
         `;
@@ -541,6 +636,7 @@
             document.getElementById('telaFinal').classList.add('hidden');
             document.getElementById('telaInicial').classList.remove('hidden');
         };
+        document.getElementById('btnFecharAba').onclick = fecharAba;
         document.getElementById('opMaior').onclick = () => responderOperador('>');
         document.getElementById('opMenor').onclick = () => responderOperador('<');
         document.getElementById('opIgual').onclick = () => responderOperador('=');
