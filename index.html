@@ -59,33 +59,6 @@
             display: none;
         }
 
-        .feedback {
-            margin: 15px auto;
-            padding: 10px;
-            border-radius: 40px;
-            font-weight: bold;
-            animation: fadeInOut 0.5s ease;
-        }
-
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translateY(-10px); }
-            20% { opacity: 1; transform: translateY(0); }
-            80% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-10px); }
-        }
-
-        .feedback-sucesso {
-            background: #d1fae5;
-            color: #065f46;
-            border-left: 4px solid #10b981;
-        }
-
-        .feedback-erro {
-            background: #fee2e2;
-            color: #991b1b;
-            border-left: 4px solid #ef4444;
-        }
-
         .numero-card {
             background: #f1f5f9;
             border-radius: 24px;
@@ -154,7 +127,6 @@
         .erro-acesso {
             text-align: center;
             padding: 50px;
-            font-family: Arial, sans-serif;
         }
         .erro-acesso h2 {
             color: #e53e3e;
@@ -310,10 +282,6 @@
                 text-align: center;
             }
         }
-
-        [aria-label] {
-            position: relative;
-        }
     </style>
 </head>
 <body>
@@ -334,12 +302,12 @@
     <h1>🧮 Comparação de Números Naturais</h1>
     
     <div class="niveis-container">
-        <button class="btn-nivel" data-nivel="facil" aria-label="Nível Fácil - Números até 20">🍃 Fácil</button>
-        <button class="btn-nivel" data-nivel="medio" aria-label="Nível Médio - Números até 50">⚡ Médio</button>
-        <button class="btn-nivel" data-nivel="dificil" aria-label="Nível Difícil - Números até 100">🔥 Difícil</button>
+        <button class="btn-nivel" data-nivel="facil">🍃 Fácil</button>
+        <button class="btn-nivel" data-nivel="medio">⚡ Médio</button>
+        <button class="btn-nivel" data-nivel="dificil">🔥 Difícil</button>
     </div>
     
-    <div class="info-sesi" role="note" aria-label="Informações da habilidade">
+    <div class="info-sesi">
         📚 Habilidade: <strong>EF1a5.MAT.1.03</strong><br>
         🎯 Comparar e ordenar números naturais em diferentes contextos
     </div>
@@ -348,31 +316,30 @@
         <strong>📋 Como jogar:</strong><br>
         • Você verá dois números.<br>
         • Escolha o operador correto: <strong>></strong> (maior), <strong>&lt;</strong> (menor) ou <strong>=</strong> (igual).<br>
-        • A cada acerto, você avança de nível!<br>
         • Complete 10 perguntas para finalizar.
     </div>
     
-    <button id="btnIniciar" aria-label="Iniciar desafio">🚀 INICIAR DESAFIO</button>
-    <div id="statusConexao" class="text-center mt-2" style="font-size:12px;" role="status"></div>
+    <button id="btnIniciar">🚀 INICIAR DESAFIO</button>
+    <div id="statusConexao" class="text-center mt-2" style="font-size:12px;"></div>
 </template>
 
 <template id="telaJogoTemplate">
     <div style="display:flex; justify-content:space-between; background:#f8fafc; border-radius:30px; padding:12px 20px; margin-bottom:25px; gap:15px; flex-wrap:wrap;">
         <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
             <span style="font-size:12px;">⭐ PONTOS</span>
-            <div style="font-size:28px; font-weight:800;" id="pontos" aria-live="polite">0</div>
+            <div style="font-size:28px; font-weight:800;" id="pontos">0</div>
         </div>
         <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
             <span style="font-size:12px;">✅ ACERTOS</span>
-            <div style="font-size:28px; font-weight:800;" id="acertos" aria-live="polite">0</div>
+            <div style="font-size:28px; font-weight:800;" id="acertos">0</div>
         </div>
         <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
             <span style="font-size:12px;">❌ ERROS</span>
-            <div style="font-size:28px; font-weight:800;" id="erros" aria-live="polite">0</div>
+            <div style="font-size:28px; font-weight:800;" id="erros">0</div>
         </div>
         <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
             <span style="font-size:12px;">⏱️ TEMPO</span>
-            <div style="font-size:28px; font-weight:800;" id="tempo" aria-live="polite">00:00</div>
+            <div style="font-size:28px; font-weight:800;" id="tempo">00:00</div>
         </div>
     </div>
 
@@ -381,23 +348,22 @@
         <div><strong>Pergunta:</strong> <span id="perguntaAtual">1</span> / <span id="totalPerguntas">10</span></div>
     </div>
 
-    <div class="progress-bar" role="progressbar" aria-label="Progresso do jogo">
+    <div class="progress-bar">
         <div class="progress-fill" id="progressFill"></div>
     </div>
 
     <div class="numeros-container">
-        <div class="numero-card" id="numeroEsquerda" aria-label="Número da esquerda">0</div>
+        <div class="numero-card" id="numeroEsquerda">0</div>
         <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-            <button class="operador-btn" id="opMaior" aria-label="Maior que">&gt;</button>
-            <button class="operador-btn" id="opMenor" aria-label="Menor que">&lt;</button>
-            <button class="operador-btn" id="opIgual" aria-label="Igual a">=</button>
+            <button class="operador-btn" id="opMaior">&gt;</button>
+            <button class="operador-btn" id="opMenor">&lt;</button>
+            <button class="operador-btn" id="opIgual">=</button>
         </div>
-        <div class="numero-card" id="numeroDireita" aria-label="Número da direita">0</div>
+        <div class="numero-card" id="numeroDireita">0</div>
     </div>
     
-    <div id="feedbackJogo" class="feedback" role="alert" aria-live="assertive"></div>
-    <button id="btnSair" aria-label="Sair do jogo" style="background:#10b981;">🔒 SAIR</button>
-    <button id="btnPular" aria-label="Pular pergunta" style="background:#f59e0b;">⏭️ PULAR PERGUNTA</button>
+    <button id="btnSair" style="background:#10b981;">🔒 SAIR</button>
+    <button id="btnPular" style="background:#f59e0b;">⏭️ PULAR PERGUNTA</button>
 </template>
 
 <template id="telaFinalTemplate">
@@ -408,12 +374,12 @@
         <p><strong>Erros:</strong> <span id="finalErros">0</span></p>
         <p><strong>Nível máximo:</strong> <span id="finalNivel">1</span></p>
         <p><strong>Tempo:</strong> <span id="finalTempo">00:00</span></p>
-        <div class="estrelas" id="estrelasContainer" aria-label="Classificação por estrelas">
-            <span class="estrela" id="estrela1" aria-hidden="true">★</span>
-            <span class="estrela" id="estrela2" aria-hidden="true">★</span>
-            <span class="estrela" id="estrela3" aria-hidden="true">★</span>
+        <div class="estrelas" id="estrelasContainer">
+            <span class="estrela" id="estrela1">★</span>
+            <span class="estrela" id="estrela2">★</span>
+            <span class="estrela" id="estrela3">★</span>
         </div>
-        <div id="msgSalvo" class="text-sm mt-2" role="status"></div>
+        <div id="msgSalvo" class="text-sm mt-2"></div>
     </div>
     
     <div id="revisaoErrosContainer" class="hidden">
@@ -421,29 +387,24 @@
         <div id="listaErros" class="revisao-erros"></div>
     </div>
     
-    <button id="btnNovamente" aria-label="Jogar novamente">🔄 JOGAR NOVAMENTE</button>
-    <button id="btnFecharAba" aria-label="Fechar esta aba" style="background:#10b981;">🚪 FECHAR ESTA ABA</button>
-    <div id="mensagemAba" class="text-sm mt-2" role="status"></div>
+    <button id="btnNovamente">🔄 JOGAR NOVAMENTE</button>
+    <button id="btnFecharAba" style="background:#10b981;">🚪 FECHAR ESTA ABA</button>
+    <div id="mensagemAba" class="text-sm mt-2"></div>
 </template>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-    // ==================== CLASSE PRINCIPAL DO JOGO ====================
     class JogoComparacaoNumeros {
         constructor() {
-            // Configurações Supabase
             this.SUPABASE_URL = 'https://qmcqffnawtfaenyziwsn.supabase.co';
             this.SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY3FmZm5hd3RmYWVueXppd3NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNTM5NTMsImV4cCI6MjA4OTcyOTk1M30._CjaNoeJeQp-8s8Jt-dk3bJfktdEV97R5LhLnWgYrNc';
             
-            // Parâmetros da URL
             this.urlParams = new URLSearchParams(window.location.search);
             this.alunoId = this.urlParams.get('aluno_id');
             this.jogoId = this.urlParams.get('jogo_id');
             this.turmaId = this.urlParams.get('turma_id');
-            this.accessToken = this.urlParams.get('token');
             this.modoTeste = this.urlParams.get('modo_teste') === 'true';
             
-            // Estado do jogo
             this.pontuacao = 0;
             this.acertos = 0;
             this.erros = 0;
@@ -457,16 +418,13 @@
             this.operadorCorreto = '';
             this.nivel = 1;
             this.perguntasRespondidas = 0;
-            this.jogoIdAtual = this.jogoId;
-            this.jogoNome = '';
             this.nivelSelecionado = 'medio';
             this.TOTAL_PERGUNTAS = 10;
             this.botoesBloqueados = false;
+            this.alunoNome = '';
             
-            // Inicializa Supabase
             this.supabase = window.supabase.createClient(this.SUPABASE_URL, this.SUPABASE_KEY);
             
-            // Configurações dos níveis
             this.niveisConfig = {
                 facil: { nome: 'Fácil', maxInicial: 20, incremento: 10, maxAbsoluto: 100 },
                 medio: { nome: 'Médio', maxInicial: 50, incremento: 25, maxAbsoluto: 200 },
@@ -474,46 +432,28 @@
             };
         }
         
-        // ==================== MÉTODOS AUXILIARES ====================
         getMaxNumero() {
             const config = this.niveisConfig[this.nivelSelecionado];
-            const maxInicial = config.maxInicial;
-            const incremento = config.incremento;
             const incrementos = Math.floor((this.nivel - 1) / 2);
-            let maxNumero = maxInicial + (incrementos * incremento);
+            let maxNumero = config.maxInicial + (incrementos * config.incremento);
             return Math.min(maxNumero, config.maxAbsoluto);
         }
         
-        // ==================== VERIFICAÇÃO DE ACESSO ====================
         async verificarAcessoJogo() {
             if (this.modoTeste) {
-                console.log('🔧 Modo teste - acesso liberado sem verificação');
+                console.log('🔧 Modo teste - acesso liberado');
                 return true;
             }
             
             if (!this.alunoId || !this.jogoId || !this.turmaId) {
-                this.mostrarErroAcesso('❌ Link inválido. Faltam parâmetros necessários. Contate seu professor.');
+                this.mostrarErroAcesso('❌ Link inválido. Contate seu professor.');
                 return false;
             }
             
             try {
-                // Mostrar loading
                 this.mostrarLoading(true);
                 
-                const { data: jogo, error: jogoError } = await this.supabase
-                    .from('jogos')
-                    .select('id, nome')
-                    .eq('id', this.jogoId)
-                    .single();
-                
-                if (jogoError || !jogo) {
-                    this.mostrarErroAcesso('❌ Atividade não encontrada.');
-                    return false;
-                }
-                
-                this.jogoNome = jogo.nome;
-                this.jogoIdAtual = jogo.id;
-                
+                // Buscar dados do aluno
                 const { data: aluno, error: alunoError } = await this.supabase
                     .from('alunos')
                     .select('id, nome_aluno, ativo, turma_id')
@@ -522,21 +462,22 @@
                     .single();
                 
                 if (alunoError || !aluno) {
-                    this.mostrarErroAcesso('❌ Aluno não encontrado ou inativo. Contate seu professor.');
+                    this.mostrarErroAcesso('❌ Aluno não encontrado ou inativo.');
                     return false;
                 }
                 
                 if (aluno.turma_id !== this.turmaId) {
-                    this.mostrarErroAcesso('❌ Turma não corresponde ao aluno. Contate seu professor.');
+                    this.mostrarErroAcesso('❌ Turma não corresponde ao aluno.');
                     return false;
                 }
                 
+                this.alunoNome = aluno.nome_aluno;
                 this.mostrarLoading(false);
                 return true;
                 
             } catch (error) {
                 console.error('Erro na verificação:', error);
-                this.mostrarErroAcesso('Erro ao verificar acesso. Tente novamente mais tarde.');
+                this.mostrarErroAcesso('Erro ao verificar acesso.');
                 return false;
             }
         }
@@ -545,7 +486,7 @@
             const statusDiv = document.getElementById('statusConexao');
             if (statusDiv) {
                 if (mostrar) {
-                    statusDiv.innerHTML = '<div class="loading"></div> Verificando acesso...';
+                    statusDiv.innerHTML = '<div class="loading"></div> Verificando...';
                 } else {
                     statusDiv.innerHTML = this.modoTeste ? '🔧 Modo teste' : '✅ Conectado';
                 }
@@ -558,12 +499,11 @@
                 <div class="erro-acesso" style="background: white; border-radius: 40px; padding: 40px; max-width: 500px; margin: 20px auto;">
                     <h2>⛔ Acesso Negado</h2>
                     <p style="color: #e53e3e; margin: 20px 0;">${mensagem}</p>
-                    <button onclick="window.history.back()" aria-label="Voltar">Voltar</button>
+                    <button onclick="window.history.back()">Voltar</button>
                 </div>
             `;
         }
         
-        // ==================== FUNÇÕES DO JOGO ====================
         calcularEstrelas() {
             if (this.erros === 0 && this.tempoDecorrido <= 30) return 3;
             if (this.erros <= 2 && this.tempoDecorrido <= 60) return 2;
@@ -631,23 +571,6 @@
             }
         }
         
-        mostrarFeedback(mensagem, tipo) {
-            const feedbackDiv = document.getElementById('feedbackJogo');
-            if (!feedbackDiv) return;
-            
-            feedbackDiv.textContent = mensagem;
-            feedbackDiv.className = 'feedback';
-            if (tipo === 'sucesso') feedbackDiv.classList.add('feedback-sucesso');
-            if (tipo === 'erro') feedbackDiv.classList.add('feedback-erro');
-            
-            setTimeout(() => {
-                if (feedbackDiv.textContent === mensagem) {
-                    feedbackDiv.textContent = '';
-                    feedbackDiv.className = 'feedback';
-                }
-            }, 1500);
-        }
-        
         iniciarCronometro() {
             if (this.intervalo) clearInterval(this.intervalo);
             this.intervalo = setInterval(() => {
@@ -670,16 +593,18 @@
         }
         
         async salvarResultado() {
-            if (this.modoTeste || !this.alunoId || !this.jogoIdAtual || !this.turmaId) {
+            if (this.modoTeste || !this.alunoId || !this.jogoId || !this.turmaId) {
                 const msgDiv = document.getElementById('msgSalvo');
-                if (msgDiv) msgDiv.innerHTML = this.modoTeste ? '🔧 Modo teste - dados não salvos' : '⚠️ Parâmetros ausentes - não salvo';
+                if (msgDiv) {
+                    msgDiv.innerHTML = this.modoTeste ? '🔧 Modo teste - dados não salvos' : '⚠️ Parâmetros ausentes';
+                }
                 return;
             }
             
-            // Ajustando os dados para corresponder exatamente à tabela 'resultados'
+            // Dados compatíveis com a tabela 'resultados'
             const dados = {
                 aluno_id: this.alunoId,
-                jogo_id: this.jogoIdAtual,
+                jogo_id: this.jogoId,
                 turma_id: this.turmaId,
                 acertos: this.acertos,
                 erros: this.erros,
@@ -687,42 +612,40 @@
                 total_questoes: this.TOTAL_PERGUNTAS,
                 habilidade_bncc: 'EF1a5.MAT.1.03',
                 detalhes_erros: this.detalhesErros.slice(0, 20),
-                pontuacao_final: Math.floor(this.pontuacao)
-                // NOTA: Removido 'nivel_maximo' pois esta coluna não existe na tabela
-                // Se precisar salvar o nível, será necessário adicionar a coluna no Supabase
+                tipo_atividade: 'comparacao_numeros',
+                aluno_nome: this.alunoNome
             };
             
-            console.log('Salvando resultado:', dados);
+            console.log('💾 Salvando resultado:', dados);
             
             try {
-                const { data, error } = await this.supabase.from('resultados').insert([dados]).select();
+                const { data, error } = await this.supabase
+                    .from('resultados')
+                    .insert([dados])
+                    .select();
+                
                 const msgDiv = document.getElementById('msgSalvo');
                 if (error) {
-                    console.error('Erro ao salvar:', error);
-                    msgDiv.innerHTML = `❌ Erro ao salvar: ${error.message}`;
-                    
-                    // Mostrar detalhes do erro no console para debug
-                    console.error('Detalhes do erro:', {
-                        message: error.message,
-                        details: error.details,
-                        hint: error.hint,
-                        code: error.code
-                    });
+                    console.error('❌ Erro:', error);
+                    msgDiv.innerHTML = `❌ Erro: ${error.message}`;
+                    msgDiv.style.color = '#991b1b';
                 } else {
-                    console.log('Salvo com sucesso:', data);
-                    msgDiv.innerHTML = '✅ Pontuação registrada!';
-                    
-                    // Limpar mensagem após 3 segundos
+                    console.log('✅ Salvo com sucesso:', data);
+                    msgDiv.innerHTML = '✅ Pontuação registrada com sucesso!';
+                    msgDiv.style.color = '#065f46';
                     setTimeout(() => {
-                        if (msgDiv.innerHTML === '✅ Pontuação registrada!') {
+                        if (msgDiv.innerHTML === '✅ Pontuação registrada com sucesso!') {
                             msgDiv.innerHTML = '';
                         }
                     }, 3000);
                 }
             } catch (error) {
-                console.error('Erro na requisição:', error);
+                console.error('❌ Erro na requisição:', error);
                 const msgDiv = document.getElementById('msgSalvo');
-                if (msgDiv) msgDiv.innerHTML = '❌ Erro de conexão ao salvar';
+                if (msgDiv) {
+                    msgDiv.innerHTML = '❌ Erro de conexão ao salvar';
+                    msgDiv.style.color = '#991b1b';
+                }
             }
         }
         
@@ -748,9 +671,7 @@
             if (finalTempo) finalTempo.textContent = `${Math.floor(this.tempoDecorrido / 60)}:${(this.tempoDecorrido % 60).toString().padStart(2, '0')}`;
             if (totalPerguntasFinal) totalPerguntasFinal.textContent = this.TOTAL_PERGUNTAS;
             
-            // Mostrar revisão de erros
             this.mostrarRevisaoErros();
-            
             await this.salvarResultado();
             
             const telaJogo = document.getElementById('telaJogo');
@@ -779,19 +700,17 @@
             }
         }
         
-        registrarAcerto(pontosGanhos = 10) {
+        registrarAcerto() {
             if (!this.jogoAtivo) return;
-            this.pontuacao += pontosGanhos;
+            this.pontuacao += 10;
             this.acertos++;
             this.atualizarUI();
-            this.mostrarFeedback(`✅ Correto! +${pontosGanhos} pontos`, 'sucesso');
             
-            // Aumenta o nível a cada 3 acertos
+            // Aumenta nível a cada 3 acertos
             if (this.acertos % 3 === 0 && this.nivel < 20) {
                 this.nivel++;
                 const nivelEl = document.getElementById('nivelAtual');
                 if (nivelEl) nivelEl.textContent = this.nivel;
-                this.mostrarFeedback(`🎉 Parabéns! Você subiu para o nível ${this.nivel}!`, 'sucesso');
             }
         }
         
@@ -801,25 +720,22 @@
             this.pontuacao = Math.max(0, this.pontuacao - 5);
             this.atualizarUI();
             if (erroDetalhe) this.detalhesErros.push(erroDetalhe);
-            this.mostrarFeedback(`❌ Ops! O correto era ${this.operadorCorreto}. -5 pontos`, 'erro');
         }
         
         async responderOperador(operadorEscolhido) {
             if (!this.jogoAtivo || this.botoesBloqueados) return;
             
-            // Bloqueia botões temporariamente
             this.bloquearBotoes(true);
             
             const acertou = (operadorEscolhido === this.operadorCorreto);
             
             if (acertou) {
-                this.registrarAcerto(10);
+                this.registrarAcerto();
             } else {
                 const detalhe = {
                     pergunta: `${this.numeroEsquerda} ? ${this.numeroDireita}`,
                     resposta_aluno: operadorEscolhido,
-                    resposta_correta: this.operadorCorreto,
-                    detrator: `Aluno escolheu ${operadorEscolhido} quando o correto era ${this.operadorCorreto}`
+                    resposta_correta: this.operadorCorreto
                 };
                 this.registrarErro(detalhe);
             }
@@ -833,7 +749,6 @@
                 this.gerarPergunta();
             }
             
-            // Desbloqueia botões após delay
             setTimeout(() => {
                 this.bloquearBotoes(false);
             }, 500);
@@ -856,8 +771,7 @@
             const detalhe = {
                 pergunta: `${this.numeroEsquerda} ? ${this.numeroDireita}`,
                 resposta_aluno: 'Pulou',
-                resposta_correta: this.operadorCorreto,
-                detrator: 'Aluno pulou a pergunta'
+                resposta_correta: this.operadorCorreto
             };
             this.registrarErro(detalhe);
             
@@ -894,14 +808,11 @@
             const telaInicial = document.getElementById('telaInicial');
             const telaJogo = document.getElementById('telaJogo');
             const telaFinal = document.getElementById('telaFinal');
-            const feedbackJogo = document.getElementById('feedbackJogo');
             
             if (telaInicial) telaInicial.classList.add('hidden');
             if (telaJogo) telaJogo.classList.remove('hidden');
             if (telaFinal) telaFinal.classList.add('hidden');
-            if (feedbackJogo) feedbackJogo.textContent = '';
             
-            // Habilita botões
             this.bloquearBotoes(false);
         }
         
@@ -910,7 +821,7 @@
             setTimeout(() => {
                 const msgDiv = document.getElementById('mensagemAba');
                 if (msgDiv) {
-                    msgDiv.innerHTML = "⚠️ Seu navegador não permitiu fechar esta aba. Feche manualmente.";
+                    msgDiv.innerHTML = "⚠️ Feche manualmente esta aba.";
                 }
             }, 200);
         }
@@ -924,16 +835,10 @@
             if (btnSelecionado) btnSelecionado.classList.add('ativo');
         }
         
-        // ==================== RENDERIZAÇÃO DAS TELAS ====================
         carregarTemplates() {
             const telaInicialTemplate = document.getElementById('telaInicialTemplate');
             const telaJogoTemplate = document.getElementById('telaJogoTemplate');
             const telaFinalTemplate = document.getElementById('telaFinalTemplate');
-            
-            if (!telaInicialTemplate || !telaJogoTemplate || !telaFinalTemplate) {
-                console.error('Templates não encontrados');
-                return;
-            }
             
             const app = document.getElementById('app');
             app.innerHTML = `
@@ -952,11 +857,9 @@
             if (telaJogoDiv) telaJogoDiv.appendChild(telaJogoTemplate.content.cloneNode(true));
             if (telaFinalDiv) telaFinalDiv.appendChild(telaFinalTemplate.content.cloneNode(true));
             
-            // Configura total de perguntas nos templates
             const totalPerguntasSpan = document.getElementById('totalPerguntas');
             if (totalPerguntasSpan) totalPerguntasSpan.textContent = this.TOTAL_PERGUNTAS;
             
-            // Atualiza status da conexão
             const statusDiv = document.getElementById('statusConexao');
             if (statusDiv) {
                 statusDiv.textContent = this.modoTeste ? '🔧 Modo teste' : (this.alunoId && this.jogoId ? '✅ Conectado' : '⚠️ Sem parâmetros');
@@ -964,11 +867,9 @@
         }
         
         configurarEventos() {
-            // Botões da tela inicial
             const btnIniciar = document.getElementById('btnIniciar');
             if (btnIniciar) btnIniciar.onclick = () => this.iniciarJogo();
             
-            // Botões de nível
             document.querySelectorAll('.btn-nivel').forEach(btn => {
                 const nivel = btn.getAttribute('data-nivel');
                 if (nivel) {
@@ -977,7 +878,6 @@
                 }
             });
             
-            // Botões da tela de jogo
             const opMaior = document.getElementById('opMaior');
             const opMenor = document.getElementById('opMenor');
             const opIgual = document.getElementById('opIgual');
@@ -999,7 +899,6 @@
             };
             if (btnPular) btnPular.onclick = () => this.pularPergunta();
             
-            // Botões da tela final
             const btnNovamente = document.getElementById('btnNovamente');
             const btnFecharAba = document.getElementById('btnFecharAba');
             
@@ -1014,18 +913,12 @@
         
         async init() {
             this.carregarTemplates();
-            
             const acessoLiberado = await this.verificarAcessoJogo();
-            
-            if (!acessoLiberado && !this.modoTeste) {
-                return;
-            }
-            
+            if (!acessoLiberado && !this.modoTeste) return;
             this.configurarEventos();
         }
     }
     
-    // ==================== INICIALIZAÇÃO ====================
     const jogo = new JogoComparacaoNumeros();
     jogo.init();
 </script>
