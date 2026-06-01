@@ -174,12 +174,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
         }
         .personagem-img img {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
+            width: 100%;
+            height: 100%;
             object-fit: cover;
+            border-radius: 50%;
         }
         .personagem-fala {
             flex: 1;
@@ -452,9 +454,9 @@
         document.getElementById('telaFinal').classList.remove('hidden');
     }
 
-    function registrarAcerto(puntosGanhos = 10) {
+    function registrarAcerto(pontosGanhos = 10) {
         if (!jogoAtivo) return;
-        pontuacao += puntosGanhos;
+        pontuacao += pontosGanhos;
         acertos++;
         atualizarUI();
         // SEM FEEDBACK DE ACERTO - apenas atualiza pontuação
@@ -552,7 +554,7 @@
                     <!-- Personagem Saci convidando -->
                     <div class="personagem-convite">
                         <div class="personagem-img">
-                            <img src="/imagens/personagens/saci-perere.png" alt="Saci" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover;">
+                            <img src="/imagens/personagens/saci-perere.png" alt="Saci">
                         </div>
                         <div class="personagem-fala">
                             <p>"E aí, corajoso! Vamos testar seus conhecimentos?"</p>
