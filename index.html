@@ -2,14 +2,13 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Saci Sabido - Comparação de Números</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            user-select: none;
         }
 
         body {
@@ -45,9 +44,15 @@
             transition: all 0.2s ease;
         }
 
-        button:hover {
+        button:hover:not(:disabled) {
             background: #4f46e5;
             transform: scale(1.02);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .hidden {
@@ -59,11 +64,26 @@
             padding: 10px;
             border-radius: 40px;
             font-weight: bold;
+            animation: fadeInOut 0.5s ease;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            20% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+
+        .feedback-sucesso {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
         }
 
         .feedback-erro {
             background: #fee2e2;
             color: #991b1b;
+            border-left: 4px solid #ef4444;
         }
 
         .numero-card {
@@ -76,6 +96,11 @@
             font-family: monospace;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             min-width: 120px;
+            transition: transform 0.3s ease;
+        }
+
+        .numero-card.animar {
+            transform: scale(1.05);
         }
 
         .operador-btn {
@@ -90,10 +115,14 @@
             cursor: pointer;
         }
 
-        .operador-btn:hover {
+        .operador-btn:hover:not(:disabled) {
             background: #e0e7ff;
             border-color: #6366f1;
             transform: scale(1.05);
+        }
+
+        .operador-btn:active:not(:disabled) {
+            transform: scale(0.95);
         }
 
         .numeros-container {
@@ -150,6 +179,7 @@
         .estrela {
             font-size: 28px;
             color: #cbd5e1;
+            transition: color 0.3s ease;
         }
         .estrela.ativa {
             color: #fbbf24;
@@ -211,470 +241,783 @@
             background: #6366f1;
             color: white;
         }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .revisao-erros {
+            background: white;
+            border-radius: 20px;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .erro-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #fef2f2;
+            border-left: 3px solid #ef4444;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 16px;
+            }
+            .numero-card {
+                padding: 20px;
+                font-size: 36px;
+                min-width: 100px;
+            }
+            .operador-btn {
+                padding: 15px 20px;
+                font-size: 28px;
+            }
+            .personagem-convite {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        [aria-label] {
+            position: relative;
+        }
     </style>
 </head>
 <body>
 
 <div id="app"></div>
 
+<template id="telaInicialTemplate">
+    <div class="personagem-convite">
+        <div class="personagem-img">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23d97706'/%3E%3Ccircle cx='35' cy='40' r='5' fill='white'/%3E%3Ccircle cx='65' cy='40' r='5' fill='white'/%3E%3Cpath d='M40 60 Q50 70 60 60' stroke='white' stroke-width='3' fill='none'/%3E%3C/svg%3E" alt="Saci Pererê">
+        </div>
+        <div class="personagem-fala">
+            <p>"E aí, corajoso! Vamos testar seus conhecimentos?"</p>
+            <small>⚡ Escolha um nível e comece o desafio!</small>
+        </div>
+    </div>
+    
+    <h1>🧮 Comparação de Números Naturais</h1>
+    
+    <div class="niveis-container">
+        <button class="btn-nivel" data-nivel="facil" aria-label="Nível Fácil - Números até 20">🍃 Fácil</button>
+        <button class="btn-nivel" data-nivel="medio" aria-label="Nível Médio - Números até 50">⚡ Médio</button>
+        <button class="btn-nivel" data-nivel="dificil" aria-label="Nível Difícil - Números até 100">🔥 Difícil</button>
+    </div>
+    
+    <div class="info-sesi" role="note" aria-label="Informações da habilidade">
+        📚 Habilidade: <strong>EF1a5.MAT.1.03</strong><br>
+        🎯 Comparar e ordenar números naturais em diferentes contextos
+    </div>
+
+    <div style="background:#f1f5f9; border-radius:20px; padding:12px; margin:20px 0; font-size:14px; text-align:left;">
+        <strong>📋 Como jogar:</strong><br>
+        • Você verá dois números.<br>
+        • Escolha o operador correto: <strong>></strong> (maior), <strong>&lt;</strong> (menor) ou <strong>=</strong> (igual).<br>
+        • A cada acerto, você avança de nível!<br>
+        • Complete 10 perguntas para finalizar.
+    </div>
+    
+    <button id="btnIniciar" aria-label="Iniciar desafio">🚀 INICIAR DESAFIO</button>
+    <div id="statusConexao" class="text-center mt-2" style="font-size:12px;" role="status"></div>
+</template>
+
+<template id="telaJogoTemplate">
+    <div style="display:flex; justify-content:space-between; background:#f8fafc; border-radius:30px; padding:12px 20px; margin-bottom:25px; gap:15px; flex-wrap:wrap;">
+        <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
+            <span style="font-size:12px;">⭐ PONTOS</span>
+            <div style="font-size:28px; font-weight:800;" id="pontos" aria-live="polite">0</div>
+        </div>
+        <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
+            <span style="font-size:12px;">✅ ACERTOS</span>
+            <div style="font-size:28px; font-weight:800;" id="acertos" aria-live="polite">0</div>
+        </div>
+        <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
+            <span style="font-size:12px;">❌ ERROS</span>
+            <div style="font-size:28px; font-weight:800;" id="erros" aria-live="polite">0</div>
+        </div>
+        <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
+            <span style="font-size:12px;">⏱️ TEMPO</span>
+            <div style="font-size:28px; font-weight:800;" id="tempo" aria-live="polite">00:00</div>
+        </div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; background:#f8fafc; border-radius:30px; padding:8px 16px; margin-bottom:20px;">
+        <div><strong>Nível:</strong> <span id="nivelAtual">1</span></div>
+        <div><strong>Pergunta:</strong> <span id="perguntaAtual">1</span> / <span id="totalPerguntas">10</span></div>
+    </div>
+
+    <div class="progress-bar" role="progressbar" aria-label="Progresso do jogo">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="numeros-container">
+        <div class="numero-card" id="numeroEsquerda" aria-label="Número da esquerda">0</div>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <button class="operador-btn" id="opMaior" aria-label="Maior que">&gt;</button>
+            <button class="operador-btn" id="opMenor" aria-label="Menor que">&lt;</button>
+            <button class="operador-btn" id="opIgual" aria-label="Igual a">=</button>
+        </div>
+        <div class="numero-card" id="numeroDireita" aria-label="Número da direita">0</div>
+    </div>
+    
+    <div id="feedbackJogo" class="feedback" role="alert" aria-live="assertive"></div>
+    <button id="btnSair" aria-label="Sair do jogo" style="background:#10b981;">🔒 SAIR</button>
+    <button id="btnPular" aria-label="Pular pergunta" style="background:#f59e0b;">⏭️ PULAR PERGUNTA</button>
+</template>
+
+<template id="telaFinalTemplate">
+    <h1>🏆 Parabéns!</h1>
+    <div style="background:#eef2ff; padding:20px; border-radius:30px; margin:20px 0;">
+        <p><strong>Pontuação final:</strong> <span id="finalPontos">0</span></p>
+        <p><strong>Acertos:</strong> <span id="finalAcertos">0</span> / <span id="totalPerguntasFinal">10</span></p>
+        <p><strong>Erros:</strong> <span id="finalErros">0</span></p>
+        <p><strong>Nível máximo:</strong> <span id="finalNivel">1</span></p>
+        <p><strong>Tempo:</strong> <span id="finalTempo">00:00</span></p>
+        <div class="estrelas" id="estrelasContainer" aria-label="Classificação por estrelas">
+            <span class="estrela" id="estrela1" aria-hidden="true">★</span>
+            <span class="estrela" id="estrela2" aria-hidden="true">★</span>
+            <span class="estrela" id="estrela3" aria-hidden="true">★</span>
+        </div>
+        <div id="msgSalvo" class="text-sm mt-2" role="status"></div>
+    </div>
+    
+    <div id="revisaoErrosContainer" class="hidden">
+        <h3>📝 Revisão dos erros:</h3>
+        <div id="listaErros" class="revisao-erros"></div>
+    </div>
+    
+    <button id="btnNovamente" aria-label="Jogar novamente">🔄 JOGAR NOVAMENTE</button>
+    <button id="btnFecharAba" aria-label="Fechar esta aba" style="background:#10b981;">🚪 FECHAR ESTA ABA</button>
+    <div id="mensagemAba" class="text-sm mt-2" role="status"></div>
+</template>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-    // ==================== CONFIGURAÇÕES DO SUPABASE ====================
-    const SUPABASE_URL = 'https://qmcqffnawtfaenyziwsn.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY3FmZm5hd3RmYWVueXppd3NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNTM5NTMsImV4cCI6MjA4OTcyOTk1M30._CjaNoeJeQp-8s8Jt-dk3bJfktdEV97R5LhLnWgYrNc';
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // ==================== PARÂMETROS DA URL ====================
-    const urlParams = new URLSearchParams(window.location.search);
-    const alunoId = urlParams.get('aluno_id');
-    const jogoId = urlParams.get('jogo_id');
-    const turmaId = urlParams.get('turma_id');
-    const accessToken = urlParams.get('token');
-    const modoTeste = urlParams.get('modo_teste') === 'true';
-
-    // ==================== VARIÁVEIS DA ATIVIDADE ====================
-    let pontuacao = 0;
-    let acertos = 0;
-    let erros = 0;
-    let jogoAtivo = false;
-    let tempoInicio = null;
-    let tempoDecorrido = 0;
-    let intervalo = null;
-    let detalhesErros = [];
-    let numeroEsquerda = 0;
-    let numeroDireita = 0;
-    let operadorCorreto = '';
-    let nivel = 1;
-    let perguntasRespondidas = 0;
-    let jogoIdAtual = jogoId;
-    let jogoNome = '';
-    let nivelSelecionado = 'medio';
-    const TOTAL_PERGUNTAS = 10;
-
-    // ==================== NÍVEIS ====================
-    const niveisConfig = {
-        facil: { nome: 'Fácil', maxInicial: 20, incremento: 10 },
-        medio: { nome: 'Médio', maxInicial: 50, incremento: 25 },
-        dificil: { nome: 'Difícil', maxInicial: 100, incremento: 50 }
-    };
-
-    function getMaxNumero(nivel) {
-        const config = niveisConfig[nivelSelecionado];
-        const maxInicial = config.maxInicial;
-        const incremento = config.incremento;
-        let incrementos = Math.floor((nivel - 1) / 2);
-        return maxInicial + (incrementos * incremento);
-    }
-
-    // ==================== FUNÇÃO DE VERIFICAÇÃO DE ACESSO ====================
-    async function verificarAcessoJogo() {
-        if (modoTeste) {
-            console.log('🔧 Modo teste - acesso liberado sem verificação');
-            return true;
-        }
-        
-        if (!alunoId || !jogoId || !turmaId) {
-            mostrarErroAcesso('❌ Link inválido. Faltam parâmetros necessários. Contate seu professor.');
-            return false;
-        }
-        
-        try {
-            const { data: jogo, error: jogoError } = await supabaseClient
-                .from('jogos')
-                .select('id, nome')
-                .eq('id', jogoId)
-                .single();
+    // ==================== CLASSE PRINCIPAL DO JOGO ====================
+    class JogoComparacaoNumeros {
+        constructor() {
+            // Configurações Supabase
+            this.SUPABASE_URL = 'https://qmcqffnawtfaenyziwsn.supabase.co';
+            this.SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY3FmZm5hd3RmYWVueXppd3NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNTM5NTMsImV4cCI6MjA4OTcyOTk1M30._CjaNoeJeQp-8s8Jt-dk3bJfktdEV97R5LhLnWgYrNc';
             
-            if (jogoError || !jogo) {
-                mostrarErroAcesso('❌ Atividade não encontrada.');
-                return false;
-            }
+            // Parâmetros da URL
+            this.urlParams = new URLSearchParams(window.location.search);
+            this.alunoId = this.urlParams.get('aluno_id');
+            this.jogoId = this.urlParams.get('jogo_id');
+            this.turmaId = this.urlParams.get('turma_id');
+            this.accessToken = this.urlParams.get('token');
+            this.modoTeste = this.urlParams.get('modo_teste') === 'true';
             
-            jogoNome = jogo.nome;
-            jogoIdAtual = jogo.id;
+            // Estado do jogo
+            this.pontuacao = 0;
+            this.acertos = 0;
+            this.erros = 0;
+            this.jogoAtivo = false;
+            this.tempoInicio = null;
+            this.tempoDecorrido = 0;
+            this.intervalo = null;
+            this.detalhesErros = [];
+            this.numeroEsquerda = 0;
+            this.numeroDireita = 0;
+            this.operadorCorreto = '';
+            this.nivel = 1;
+            this.perguntasRespondidas = 0;
+            this.jogoIdAtual = this.jogoId;
+            this.jogoNome = '';
+            this.nivelSelecionado = 'medio';
+            this.TOTAL_PERGUNTAS = 10;
+            this.botoesBloqueados = false;
             
-            const { data: aluno, error: alunoError } = await supabaseClient
-                .from('alunos')
-                .select('id, nome_aluno, ativo, turma_id')
-                .eq('id', alunoId)
-                .eq('ativo', true)
-                .single();
+            // Inicializa Supabase
+            this.supabase = window.supabase.createClient(this.SUPABASE_URL, this.SUPABASE_KEY);
             
-            if (alunoError || !aluno) {
-                mostrarErroAcesso('❌ Aluno não encontrado ou inativo. Contate seu professor.');
-                return false;
-            }
-            
-            if (aluno.turma_id !== turmaId) {
-                mostrarErroAcesso('❌ Turma não corresponde ao aluno. Contate seu professor.');
-                return false;
-            }
-            
-            return true;
-            
-        } catch (error) {
-            console.error('Erro na verificação:', error);
-            mostrarErroAcesso('Erro ao verificar acesso. Tente novamente mais tarde.');
-            return false;
-        }
-    }
-    
-    function mostrarErroAcesso(mensagem) {
-        const app = document.getElementById('app');
-        app.innerHTML = `
-            <div class="erro-acesso" style="background: white; border-radius: 40px; padding: 40px; max-width: 500px; margin: 20px auto;">
-                <h2>⛔ Acesso Negado</h2>
-                <p style="color: #e53e3e; margin: 20px 0;">${mensagem}</p>
-                <button onclick="window.history.back()">Voltar</button>
-            </div>
-        `;
-    }
-
-    // ==================== FUNÇÕES DA ATIVIDADE ====================
-    function calcularEstrelas() {
-        if (erros === 0 && tempoDecorrido <= 30) return 3;
-        if (erros <= 2 && tempoDecorrido <= 60) return 2;
-        return 1;
-    }
-
-    function exibirEstrelas(qtd) {
-        for (let i = 1; i <= 3; i++) {
-            const estrela = document.getElementById(`estrela${i}`);
-            if (estrela) {
-                if (i <= qtd) estrela.classList.add('ativa');
-                else estrela.classList.remove('ativa');
-            }
-        }
-    }
-
-    function gerarPergunta() {
-        const maxNum = getMaxNumero(nivel);
-        numeroEsquerda = Math.floor(Math.random() * (maxNum + 1));
-        numeroDireita = Math.floor(Math.random() * (maxNum + 1));
-
-        if (numeroEsquerda > numeroDireita) operadorCorreto = '>';
-        else if (numeroEsquerda < numeroDireita) operadorCorreto = '<';
-        else operadorCorreto = '=';
-
-        document.getElementById('numeroEsquerda').textContent = numeroEsquerda;
-        document.getElementById('numeroDireita').textContent = numeroDireita;
-        document.getElementById('nivelAtual').textContent = nivel;
-        document.getElementById('perguntaAtual').textContent = perguntasRespondidas + 1;
-    }
-
-    function atualizarUI() {
-        document.getElementById('pontos').textContent = Math.floor(pontuacao);
-        document.getElementById('acertos').textContent = acertos;
-        document.getElementById('erros').textContent = erros;
-    }
-
-    function mostrarFeedback(mensagem, tipo) {
-        const feedbackDiv = document.getElementById('feedbackJogo');
-        feedbackDiv.textContent = mensagem;
-        feedbackDiv.className = 'feedback';
-        if (tipo === 'erro') feedbackDiv.classList.add('feedback-erro');
-        setTimeout(() => {
-            if (feedbackDiv.textContent === mensagem) {
-                feedbackDiv.textContent = '';
-                feedbackDiv.className = 'feedback';
-            }
-        }, 500);
-    }
-
-    function iniciarCronometro() {
-        if (intervalo) clearInterval(intervalo);
-        intervalo = setInterval(() => {
-            if (!jogoAtivo) return;
-            tempoDecorrido = Math.floor((Date.now() - tempoInicio) / 1000);
-            const minutos = Math.floor(tempoDecorrido / 60);
-            const segundos = tempoDecorrido % 60;
-            const tempoFormatado = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
-            const tempoEl = document.getElementById('tempo');
-            if (tempoEl) tempoEl.textContent = tempoFormatado;
-        }, 1000);
-    }
-
-    function pararCronometro() {
-        if (intervalo) clearInterval(intervalo);
-        intervalo = null;
-        if (tempoInicio) {
-            tempoDecorrido = Math.floor((Date.now() - tempoInicio) / 1000);
-        }
-    }
-
-    async function salvarResultado() {
-        if (modoTeste || !alunoId || !jogoIdAtual || !turmaId) {
-            const msgDiv = document.getElementById('msgSalvo');
-            if (msgDiv) msgDiv.innerHTML = modoTeste ? '🔧 Modo teste - dados não salvos' : '⚠️ Parâmetros ausentes - não salvo';
-            return;
-        }
-        
-        const dados = {
-            aluno_id: alunoId,
-            jogo_id: jogoIdAtual,
-            turma_id: turmaId,
-            acertos: acertos,
-            erros: erros,
-            tempo_segundos: tempoDecorrido,
-            total_questoes: TOTAL_PERGUNTAS,
-            habilidade_bncc: 'EF1a5.MAT.1.03',
-            detalhes_erros: detalhesErros.slice(0, 20)
-        };
-        
-        console.log('Salvando resultado:', dados);
-        
-        const { data, error } = await supabaseClient.from('resultados').insert([dados]).select();
-        const msgDiv = document.getElementById('msgSalvo');
-        if (error) {
-            console.error('Erro ao salvar:', error);
-            msgDiv.innerHTML = `❌ Erro ao salvar: ${error.message}`;
-        } else {
-            console.log('Salvo com sucesso:', data);
-            msgDiv.innerHTML = '✅ Pontuação registrada!';
-        }
-    }
-
-    async function finalizarJogo() {
-        if (!jogoAtivo) return;
-        jogoAtivo = false;
-        pararCronometro();
-        
-        const estrelas = calcularEstrelas();
-        exibirEstrelas(estrelas);
-        
-        document.getElementById('finalPontos').textContent = Math.floor(pontuacao);
-        document.getElementById('finalAcertos').textContent = acertos;
-        document.getElementById('finalErros').textContent = erros;
-        document.getElementById('finalNivel').textContent = nivel;
-        document.getElementById('finalTempo').textContent = `${Math.floor(tempoDecorrido / 60)}:${(tempoDecorrido % 60).toString().padStart(2, '0')}`;
-        
-        await salvarResultado();
-        
-        document.getElementById('telaJogo').classList.add('hidden');
-        document.getElementById('telaFinal').classList.remove('hidden');
-    }
-
-    function registrarAcerto(pontosGanhos = 10) {
-        if (!jogoAtivo) return;
-        pontuacao += pontosGanhos;
-        acertos++;
-        atualizarUI();
-        // SEM FEEDBACK DE ACERTO - apenas atualiza pontuação
-        
-        if (acertos % 3 === 0 && nivel < 20) {
-            nivel++;
-        }
-    }
-
-    function registrarErro(erroDetalhe = null) {
-        if (!jogoAtivo) return;
-        erros++;
-        pontuacao = Math.max(0, pontuacao - 5);
-        atualizarUI();
-        if (erroDetalhe) detalhesErros.push(erroDetalhe);
-        mostrarFeedback(`❌ O correto era ${operadorCorreto}.`, 'erro');
-    }
-
-    function responderOperador(operadorEscolhido) {
-        if (!jogoAtivo) return;
-        const acertou = (operadorEscolhido === operadorCorreto);
-        
-        if (acertou) {
-            registrarAcerto(10);
-        } else {
-            const detalhe = {
-                pergunta: `${numeroEsquerda} ? ${numeroDireita}`,
-                resposta_aluno: operadorEscolhido,
-                resposta_correta: operadorCorreto,
-                detrator: `Aluno escolheu ${operadorEscolhido} quando o correto era ${operadorCorreto}`
+            // Configurações dos níveis
+            this.niveisConfig = {
+                facil: { nome: 'Fácil', maxInicial: 20, incremento: 10, maxAbsoluto: 100 },
+                medio: { nome: 'Médio', maxInicial: 50, incremento: 25, maxAbsoluto: 200 },
+                dificil: { nome: 'Difícil', maxInicial: 100, incremento: 50, maxAbsoluto: 500 }
             };
-            registrarErro(detalhe);
         }
-
-        perguntasRespondidas++;
-        document.getElementById('perguntaAtual').textContent = perguntasRespondidas + 1;
-
-        if (perguntasRespondidas >= TOTAL_PERGUNTAS) {
-            finalizarJogo();
-        } else {
-            gerarPergunta();
-        }
-    }
-
-    function iniciarJogo() {
-        pontuacao = 0;
-        acertos = 0;
-        erros = 0;
-        nivel = 1;
-        perguntasRespondidas = 0;
-        detalhesErros = [];
-        jogoAtivo = true;
-        tempoInicio = Date.now();
-        tempoDecorrido = 0;
-        atualizarUI();
-        gerarPergunta();
-        iniciarCronometro();
         
-        document.getElementById('telaInicial').classList.add('hidden');
-        document.getElementById('telaJogo').classList.remove('hidden');
-        document.getElementById('telaFinal').classList.add('hidden');
-        document.getElementById('feedbackJogo').textContent = '';
-    }
-
-    function fecharAba() {
-        window.close();
-        setTimeout(() => {
-            const msgDiv = document.getElementById('mensagemAba');
-            if (msgDiv) {
-                msgDiv.innerHTML = "⚠️ Seu navegador não permitiu fechar esta aba. Feche manualmente.";
+        // ==================== MÉTODOS AUXILIARES ====================
+        getMaxNumero() {
+            const config = this.niveisConfig[this.nivelSelecionado];
+            const maxInicial = config.maxInicial;
+            const incremento = config.incremento;
+            const incrementos = Math.floor((this.nivel - 1) / 2);
+            let maxNumero = maxInicial + (incrementos * incremento);
+            return Math.min(maxNumero, config.maxAbsoluto);
+        }
+        
+        // ==================== VERIFICAÇÃO DE ACESSO ====================
+        async verificarAcessoJogo() {
+            if (this.modoTeste) {
+                console.log('🔧 Modo teste - acesso liberado sem verificação');
+                return true;
             }
-        }, 200);
-    }
-
-    function selecionarNivel(nivel) {
-        nivelSelecionado = nivel;
-        document.querySelectorAll('.btn-nivel').forEach(btn => {
-            btn.classList.remove('ativo');
-        });
-        document.querySelector(`.btn-nivel[data-nivel="${nivel}"]`).classList.add('ativo');
-    }
-
-    // ==================== RENDERIZAR TELA INICIAL ====================
-    async function carregarJogo() {
-        const acessoLiberado = await verificarAcessoJogo();
-        
-        if (!acessoLiberado && !modoTeste) {
-            return;
+            
+            if (!this.alunoId || !this.jogoId || !this.turmaId) {
+                this.mostrarErroAcesso('❌ Link inválido. Faltam parâmetros necessários. Contate seu professor.');
+                return false;
+            }
+            
+            try {
+                // Mostrar loading
+                this.mostrarLoading(true);
+                
+                const { data: jogo, error: jogoError } = await this.supabase
+                    .from('jogos')
+                    .select('id, nome')
+                    .eq('id', this.jogoId)
+                    .single();
+                
+                if (jogoError || !jogo) {
+                    this.mostrarErroAcesso('❌ Atividade não encontrada.');
+                    return false;
+                }
+                
+                this.jogoNome = jogo.nome;
+                this.jogoIdAtual = jogo.id;
+                
+                const { data: aluno, error: alunoError } = await this.supabase
+                    .from('alunos')
+                    .select('id, nome_aluno, ativo, turma_id')
+                    .eq('id', this.alunoId)
+                    .eq('ativo', true)
+                    .single();
+                
+                if (alunoError || !aluno) {
+                    this.mostrarErroAcesso('❌ Aluno não encontrado ou inativo. Contate seu professor.');
+                    return false;
+                }
+                
+                if (aluno.turma_id !== this.turmaId) {
+                    this.mostrarErroAcesso('❌ Turma não corresponde ao aluno. Contate seu professor.');
+                    return false;
+                }
+                
+                this.mostrarLoading(false);
+                return true;
+                
+            } catch (error) {
+                console.error('Erro na verificação:', error);
+                this.mostrarErroAcesso('Erro ao verificar acesso. Tente novamente mais tarde.');
+                return false;
+            }
         }
         
-        const app = document.getElementById('app');
-        app.innerHTML = `
-            <div class="container">
-                <div id="telaInicial">
-                    <!-- Personagem Saci convidando -->
-                    <div class="personagem-convite">
-                        <div class="personagem-img">
-                            <img src="/imagens/personagens/saci-perere.png" alt="Saci">
-                        </div>
-                        <div class="personagem-fala">
-                            <p>"E aí, corajoso! Vamos testar seus conhecimentos?"</p>
-                            <small>⚡ Escolha um nível e comece o desafio!</small>
-                        </div>
-                    </div>
-                    
-                    <h1>🧮 Comparação de Números Naturais</h1>
-                    
-                    <div class="niveis-container">
-                        <button class="btn-nivel ${nivelSelecionado === 'facil' ? 'ativo' : ''}" data-nivel="facil" onclick="selecionarNivel('facil')">🍃 Fácil</button>
-                        <button class="btn-nivel ${nivelSelecionado === 'medio' ? 'ativo' : ''}" data-nivel="medio" onclick="selecionarNivel('medio')">⚡ Médio</button>
-                        <button class="btn-nivel ${nivelSelecionado === 'dificil' ? 'ativo' : ''}" data-nivel="dificil" onclick="selecionarNivel('dificil')">🔥 Difícil</button>
-                    </div>
-                    
-                    <div class="info-sesi">
-                        📚 Habilidade: <strong>EF1a5.MAT.1.03</strong><br>
-                        🎯 Comparar e ordenar números naturais em diferentes contextos
-                    </div>
-
-                    <div style="background:#f1f5f9; border-radius:20px; padding:12px; margin:20px 0; font-size:14px; text-align:left;">
-                        <strong>📋 Como jogar:</strong><br>
-                        • Você verá dois números.<br>
-                        • Escolha o operador correto: <strong>></strong> (maior), <strong>&lt;</strong> (menor) ou <strong>=</strong> (igual).<br>
-                        • A cada acerto, você avança de nível!<br>
-                        • Complete 10 perguntas para finalizar.
-                    </div>
-                    
-                    <button id="btnIniciar">🚀 INICIAR DESAFIO</button>
-                    <div id="statusConexao" class="text-center mt-2" style="font-size:12px;">
-                        ${modoTeste ? '🔧 Modo teste' : (alunoId && jogoId ? '✅ Conectado' : '⚠️ Sem parâmetros')}
-                    </div>
-                </div>
-
-                <div id="telaJogo" class="hidden">
-                    <div style="display:flex; justify-content:space-between; background:#f8fafc; border-radius:30px; padding:12px 20px; margin-bottom:25px; gap:15px; flex-wrap:wrap;">
-                        <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
-                            <span style="font-size:12px;">⭐ PONTOS</span>
-                            <div style="font-size:28px; font-weight:800;" id="pontos">0</div>
-                        </div>
-                        <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
-                            <span style="font-size:12px;">✅ ACERTOS</span>
-                            <div style="font-size:28px; font-weight:800;" id="acertos">0</div>
-                        </div>
-                        <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
-                            <span style="font-size:12px;">❌ ERROS</span>
-                            <div style="font-size:28px; font-weight:800;" id="erros">0</div>
-                        </div>
-                        <div style="background:white; border-radius:20px; padding:8px 16px; flex:1; text-align:center;">
-                            <span style="font-size:12px;">⏱️ TEMPO</span>
-                            <div style="font-size:28px; font-weight:800;" id="tempo">00:00</div>
-                        </div>
-                    </div>
-
-                    <div style="display:flex; justify-content:space-between; background:#f8fafc; border-radius:30px; padding:8px 16px; margin-bottom:20px;">
-                        <div><strong>Nível:</strong> <span id="nivelAtual">1</span></div>
-                        <div><strong>Pergunta:</strong> <span id="perguntaAtual">1</span> / ${TOTAL_PERGUNTAS}</div>
-                    </div>
-
-                    <div class="numeros-container">
-                        <div class="numero-card" id="numeroEsquerda">0</div>
-                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                            <button class="operador-btn" id="opMaior">&gt;</button>
-                            <button class="operador-btn" id="opMenor">&lt;</button>
-                            <button class="operador-btn" id="opIgual">=</button>
-                        </div>
-                        <div class="numero-card" id="numeroDireita">0</div>
-                    </div>
-                    
-                    <div id="feedbackJogo" class="feedback"></div>
-                    <button id="btnSair" class="btn-fechar" style="background:#10b981;">🔒 SAIR</button>
-                </div>
-
-                <div id="telaFinal" class="hidden">
-                    <h1>🏆 Parabéns!</h1>
-                    <div style="background:#eef2ff; padding:20px; border-radius:30px; margin:20px 0;">
-                        <p><strong>Pontuação final:</strong> <span id="finalPontos">0</span></p>
-                        <p><strong>Acertos:</strong> <span id="finalAcertos">0</span> / ${TOTAL_PERGUNTAS}</p>
-                        <p><strong>Erros:</strong> <span id="finalErros">0</span></p>
-                        <p><strong>Nível máximo:</strong> <span id="finalNivel">1</span></p>
-                        <p><strong>Tempo:</strong> <span id="finalTempo">00:00</span></p>
-                        <div class="estrelas" id="estrelasContainer">
-                            <span class="estrela" id="estrela1">★</span>
-                            <span class="estrela" id="estrela2">★</span>
-                            <span class="estrela" id="estrela3">★</span>
-                        </div>
-                        <div id="msgSalvo" class="text-sm mt-2"></div>
-                    </div>
-                    <button id="btnNovamente">🔄 JOGAR NOVAMENTE</button>
-                    <button id="btnFecharAba" class="btn-fechar" style="background:#10b981;">🚪 FECHAR ESTA ABA</button>
-                    <div id="mensagemAba" class="text-sm mt-2"></div>
-                </div>
-            </div>
-        `;
-        
-        // Conectar eventos
-        document.getElementById('btnIniciar').onclick = iniciarJogo;
-        document.getElementById('btnSair').onclick = () => {
-            if (jogoAtivo && confirm("Deseja sair? O progresso será perdido.")) {
-                finalizarJogo();
-            } else if (!jogoAtivo) {
-                document.getElementById('telaJogo').classList.add('hidden');
-                document.getElementById('telaInicial').classList.remove('hidden');
+        mostrarLoading(mostrar) {
+            const statusDiv = document.getElementById('statusConexao');
+            if (statusDiv) {
+                if (mostrar) {
+                    statusDiv.innerHTML = '<div class="loading"></div> Verificando acesso...';
+                } else {
+                    statusDiv.innerHTML = this.modoTeste ? '🔧 Modo teste' : '✅ Conectado';
+                }
             }
-        };
-        document.getElementById('btnNovamente').onclick = () => {
-            document.getElementById('telaFinal').classList.add('hidden');
-            document.getElementById('telaInicial').classList.remove('hidden');
-        };
-        document.getElementById('btnFecharAba').onclick = fecharAba;
-        document.getElementById('opMaior').onclick = () => responderOperador('>');
-        document.getElementById('opMenor').onclick = () => responderOperador('<');
-        document.getElementById('opIgual').onclick = () => responderOperador('=');
+        }
         
-        // Expor funções para o escopo global
-        window.selecionarNivel = selecionarNivel;
+        mostrarErroAcesso(mensagem) {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="erro-acesso" style="background: white; border-radius: 40px; padding: 40px; max-width: 500px; margin: 20px auto;">
+                    <h2>⛔ Acesso Negado</h2>
+                    <p style="color: #e53e3e; margin: 20px 0;">${mensagem}</p>
+                    <button onclick="window.history.back()" aria-label="Voltar">Voltar</button>
+                </div>
+            `;
+        }
+        
+        // ==================== FUNÇÕES DO JOGO ====================
+        calcularEstrelas() {
+            if (this.erros === 0 && this.tempoDecorrido <= 30) return 3;
+            if (this.erros <= 2 && this.tempoDecorrido <= 60) return 2;
+            return 1;
+        }
+        
+        exibirEstrelas(qtd) {
+            for (let i = 1; i <= 3; i++) {
+                const estrela = document.getElementById(`estrela${i}`);
+                if (estrela) {
+                    if (i <= qtd) estrela.classList.add('ativa');
+                    else estrela.classList.remove('ativa');
+                }
+            }
+        }
+        
+        animarNumero() {
+            const esquerda = document.getElementById('numeroEsquerda');
+            const direita = document.getElementById('numeroDireita');
+            if (esquerda) esquerda.classList.add('animar');
+            if (direita) direita.classList.add('animar');
+            setTimeout(() => {
+                if (esquerda) esquerda.classList.remove('animar');
+                if (direita) direita.classList.remove('animar');
+            }, 300);
+        }
+        
+        gerarPergunta() {
+            const maxNum = this.getMaxNumero();
+            this.numeroEsquerda = Math.floor(Math.random() * (maxNum + 1));
+            this.numeroDireita = Math.floor(Math.random() * (maxNum + 1));
+            
+            if (this.numeroEsquerda > this.numeroDireita) this.operadorCorreto = '>';
+            else if (this.numeroEsquerda < this.numeroDireita) this.operadorCorreto = '<';
+            else this.operadorCorreto = '=';
+            
+            const numEsqElement = document.getElementById('numeroEsquerda');
+            const numDirElement = document.getElementById('numeroDireita');
+            if (numEsqElement) numEsqElement.textContent = this.numeroEsquerda;
+            if (numDirElement) numDirElement.textContent = this.numeroDireita;
+            
+            const nivelEl = document.getElementById('nivelAtual');
+            const perguntaEl = document.getElementById('perguntaAtual');
+            if (nivelEl) nivelEl.textContent = this.nivel;
+            if (perguntaEl) perguntaEl.textContent = this.perguntasRespondidas + 1;
+            
+            this.animarNumero();
+            this.atualizarProgresso();
+        }
+        
+        atualizarUI() {
+            const pontosEl = document.getElementById('pontos');
+            const acertosEl = document.getElementById('acertos');
+            const errosEl = document.getElementById('erros');
+            if (pontosEl) pontosEl.textContent = Math.floor(this.pontuacao);
+            if (acertosEl) acertosEl.textContent = this.acertos;
+            if (errosEl) errosEl.textContent = this.erros;
+        }
+        
+        atualizarProgresso() {
+            const progressFill = document.getElementById('progressFill');
+            if (progressFill) {
+                const percent = (this.perguntasRespondidas / this.TOTAL_PERGUNTAS) * 100;
+                progressFill.style.width = `${percent}%`;
+            }
+        }
+        
+        mostrarFeedback(mensagem, tipo) {
+            const feedbackDiv = document.getElementById('feedbackJogo');
+            if (!feedbackDiv) return;
+            
+            feedbackDiv.textContent = mensagem;
+            feedbackDiv.className = 'feedback';
+            if (tipo === 'sucesso') feedbackDiv.classList.add('feedback-sucesso');
+            if (tipo === 'erro') feedbackDiv.classList.add('feedback-erro');
+            
+            // Feedback sonoro opcional (apenas se o usuário interagiu com a página)
+            if (tipo === 'sucesso' && window.speechSynthesis) {
+                const utterance = new SpeechSynthesisUtterance('Resposta correta!');
+                utterance.volume = 0.3;
+                speechSynthesis.speak(utterance);
+            }
+            
+            setTimeout(() => {
+                if (feedbackDiv.textContent === mensagem) {
+                    feedbackDiv.textContent = '';
+                    feedbackDiv.className = 'feedback';
+                }
+            }, 1500);
+        }
+        
+        iniciarCronometro() {
+            if (this.intervalo) clearInterval(this.intervalo);
+            this.intervalo = setInterval(() => {
+                if (!this.jogoAtivo) return;
+                this.tempoDecorrido = Math.floor((Date.now() - this.tempoInicio) / 1000);
+                const minutos = Math.floor(this.tempoDecorrido / 60);
+                const segundos = this.tempoDecorrido % 60;
+                const tempoFormatado = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+                const tempoEl = document.getElementById('tempo');
+                if (tempoEl) tempoEl.textContent = tempoFormatado;
+            }, 1000);
+        }
+        
+        pararCronometro() {
+            if (this.intervalo) clearInterval(this.intervalo);
+            this.intervalo = null;
+            if (this.tempoInicio) {
+                this.tempoDecorrido = Math.floor((Date.now() - this.tempoInicio) / 1000);
+            }
+        }
+        
+        async salvarResultado() {
+            if (this.modoTeste || !this.alunoId || !this.jogoIdAtual || !this.turmaId) {
+                const msgDiv = document.getElementById('msgSalvo');
+                if (msgDiv) msgDiv.innerHTML = this.modoTeste ? '🔧 Modo teste - dados não salvos' : '⚠️ Parâmetros ausentes - não salvo';
+                return;
+            }
+            
+            const dados = {
+                aluno_id: this.alunoId,
+                jogo_id: this.jogoIdAtual,
+                turma_id: this.turmaId,
+                acertos: this.acertos,
+                erros: this.erros,
+                tempo_segundos: this.tempoDecorrido,
+                total_questoes: this.TOTAL_PERGUNTAS,
+                habilidade_bncc: 'EF1a5.MAT.1.03',
+                detalhes_erros: this.detalhesErros.slice(0, 20),
+                pontuacao_final: Math.floor(this.pontuacao),
+                nivel_maximo: this.nivel
+            };
+            
+            console.log('Salvando resultado:', dados);
+            
+            try {
+                const { data, error } = await this.supabase.from('resultados').insert([dados]).select();
+                const msgDiv = document.getElementById('msgSalvo');
+                if (error) {
+                    console.error('Erro ao salvar:', error);
+                    msgDiv.innerHTML = `❌ Erro ao salvar: ${error.message}`;
+                } else {
+                    console.log('Salvo com sucesso:', data);
+                    msgDiv.innerHTML = '✅ Pontuação registrada!';
+                }
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                const msgDiv = document.getElementById('msgSalvo');
+                if (msgDiv) msgDiv.innerHTML = '❌ Erro de conexão ao salvar';
+            }
+        }
+        
+        async finalizarJogo() {
+            if (!this.jogoAtivo) return;
+            this.jogoAtivo = false;
+            this.pararCronometro();
+            
+            const estrelas = this.calcularEstrelas();
+            this.exibirEstrelas(estrelas);
+            
+            const finalPontos = document.getElementById('finalPontos');
+            const finalAcertos = document.getElementById('finalAcertos');
+            const finalErros = document.getElementById('finalErros');
+            const finalNivel = document.getElementById('finalNivel');
+            const finalTempo = document.getElementById('finalTempo');
+            const totalPerguntasFinal = document.getElementById('totalPerguntasFinal');
+            
+            if (finalPontos) finalPontos.textContent = Math.floor(this.pontuacao);
+            if (finalAcertos) finalAcertos.textContent = this.acertos;
+            if (finalErros) finalErros.textContent = this.erros;
+            if (finalNivel) finalNivel.textContent = this.nivel;
+            if (finalTempo) finalTempo.textContent = `${Math.floor(this.tempoDecorrido / 60)}:${(this.tempoDecorrido % 60).toString().padStart(2, '0')}`;
+            if (totalPerguntasFinal) totalPerguntasFinal.textContent = this.TOTAL_PERGUNTAS;
+            
+            // Mostrar revisão de erros
+            this.mostrarRevisaoErros();
+            
+            await this.salvarResultado();
+            
+            const telaJogo = document.getElementById('telaJogo');
+            const telaFinal = document.getElementById('telaFinal');
+            if (telaJogo) telaJogo.classList.add('hidden');
+            if (telaFinal) telaFinal.classList.remove('hidden');
+        }
+        
+        mostrarRevisaoErros() {
+            const container = document.getElementById('revisaoErrosContainer');
+            const listaErros = document.getElementById('listaErros');
+            
+            if (!container || !listaErros) return;
+            
+            if (this.detalhesErros.length > 0) {
+                container.classList.remove('hidden');
+                listaErros.innerHTML = this.detalhesErros.map((erro, index) => `
+                    <div class="erro-item">
+                        <strong>❌ Erro ${index + 1}:</strong> ${erro.pergunta}<br>
+                        <span style="color: #dc2626;">Sua resposta: ${erro.resposta_aluno}</span><br>
+                        <span style="color: #059669;">Resposta correta: ${erro.resposta_correta}</span>
+                    </div>
+                `).join('');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+        
+        registrarAcerto(pontosGanhos = 10) {
+            if (!this.jogoAtivo) return;
+            this.pontuacao += pontosGanhos;
+            this.acertos++;
+            this.atualizarUI();
+            this.mostrarFeedback(`✅ Correto! +${pontosGanhos} pontos`, 'sucesso');
+            
+            // Aumenta o nível a cada 3 acertos
+            if (this.acertos % 3 === 0 && this.nivel < 20) {
+                this.nivel++;
+                const nivelEl = document.getElementById('nivelAtual');
+                if (nivelEl) nivelEl.textContent = this.nivel;
+                this.mostrarFeedback(`🎉 Parabéns! Você subiu para o nível ${this.nivel}!`, 'sucesso');
+            }
+        }
+        
+        registrarErro(erroDetalhe = null) {
+            if (!this.jogoAtivo) return;
+            this.erros++;
+            this.pontuacao = Math.max(0, this.pontuacao - 5);
+            this.atualizarUI();
+            if (erroDetalhe) this.detalhesErros.push(erroDetalhe);
+            this.mostrarFeedback(`❌ Ops! O correto era ${this.operadorCorreto}. -5 pontos`, 'erro');
+        }
+        
+        async responderOperador(operadorEscolhido) {
+            if (!this.jogoAtivo || this.botoesBloqueados) return;
+            
+            // Bloqueia botões temporariamente
+            this.bloquearBotoes(true);
+            
+            const acertou = (operadorEscolhido === this.operadorCorreto);
+            
+            if (acertou) {
+                this.registrarAcerto(10);
+            } else {
+                const detalhe = {
+                    pergunta: `${this.numeroEsquerda} ? ${this.numeroDireita}`,
+                    resposta_aluno: operadorEscolhido,
+                    resposta_correta: this.operadorCorreto,
+                    detrator: `Aluno escolheu ${operadorEscolhido} quando o correto era ${this.operadorCorreto}`
+                };
+                this.registrarErro(detalhe);
+            }
+            
+            this.perguntasRespondidas++;
+            this.atualizarProgresso();
+            
+            if (this.perguntasRespondidas >= this.TOTAL_PERGUNTAS) {
+                await this.finalizarJogo();
+            } else {
+                this.gerarPergunta();
+            }
+            
+            // Desbloqueia botões após delay
+            setTimeout(() => {
+                this.bloquearBotoes(false);
+            }, 500);
+        }
+        
+        bloquearBotoes(bloquear) {
+            this.botoesBloqueados = bloquear;
+            const botoes = ['opMaior', 'opMenor', 'opIgual'];
+            botoes.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.disabled = bloquear;
+            });
+        }
+        
+        pularPergunta() {
+            if (!this.jogoAtivo || this.botoesBloqueados) return;
+            
+            this.bloquearBotoes(true);
+            
+            const detalhe = {
+                pergunta: `${this.numeroEsquerda} ? ${this.numeroDireita}`,
+                resposta_aluno: 'Pulou',
+                resposta_correta: this.operadorCorreto,
+                detrator: 'Aluno pulou a pergunta'
+            };
+            this.registrarErro(detalhe);
+            
+            this.perguntasRespondidas++;
+            this.atualizarProgresso();
+            
+            if (this.perguntasRespondidas >= this.TOTAL_PERGUNTAS) {
+                this.finalizarJogo();
+            } else {
+                this.gerarPergunta();
+            }
+            
+            setTimeout(() => {
+                this.bloquearBotoes(false);
+            }, 500);
+        }
+        
+        iniciarJogo() {
+            this.pontuacao = 0;
+            this.acertos = 0;
+            this.erros = 0;
+            this.nivel = 1;
+            this.perguntasRespondidas = 0;
+            this.detalhesErros = [];
+            this.jogoAtivo = true;
+            this.tempoInicio = Date.now();
+            this.tempoDecorrido = 0;
+            this.botoesBloqueados = false;
+            
+            this.atualizarUI();
+            this.gerarPergunta();
+            this.iniciarCronometro();
+            
+            const telaInicial = document.getElementById('telaInicial');
+            const telaJogo = document.getElementById('telaJogo');
+            const telaFinal = document.getElementById('telaFinal');
+            const feedbackJogo = document.getElementById('feedbackJogo');
+            
+            if (telaInicial) telaInicial.classList.add('hidden');
+            if (telaJogo) telaJogo.classList.remove('hidden');
+            if (telaFinal) telaFinal.classList.add('hidden');
+            if (feedbackJogo) feedbackJogo.textContent = '';
+            
+            // Habilita botões
+            this.bloquearBotoes(false);
+        }
+        
+        fecharAba() {
+            window.close();
+            setTimeout(() => {
+                const msgDiv = document.getElementById('mensagemAba');
+                if (msgDiv) {
+                    msgDiv.innerHTML = "⚠️ Seu navegador não permitiu fechar esta aba. Feche manualmente.";
+                }
+            }, 200);
+        }
+        
+        selecionarNivel(nivel) {
+            this.nivelSelecionado = nivel;
+            document.querySelectorAll('.btn-nivel').forEach(btn => {
+                btn.classList.remove('ativo');
+            });
+            const btnSelecionado = document.querySelector(`.btn-nivel[data-nivel="${nivel}"]`);
+            if (btnSelecionado) btnSelecionado.classList.add('ativo');
+        }
+        
+        // ==================== RENDERIZAÇÃO DAS TELAS ====================
+        carregarTemplates() {
+            const telaInicialTemplate = document.getElementById('telaInicialTemplate');
+            const telaJogoTemplate = document.getElementById('telaJogoTemplate');
+            const telaFinalTemplate = document.getElementById('telaFinalTemplate');
+            
+            if (!telaInicialTemplate || !telaJogoTemplate || !telaFinalTemplate) {
+                console.error('Templates não encontrados');
+                return;
+            }
+            
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="container">
+                    <div id="telaInicial"></div>
+                    <div id="telaJogo" class="hidden"></div>
+                    <div id="telaFinal" class="hidden"></div>
+                </div>
+            `;
+            
+            const telaInicialDiv = document.getElementById('telaInicial');
+            const telaJogoDiv = document.getElementById('telaJogo');
+            const telaFinalDiv = document.getElementById('telaFinal');
+            
+            if (telaInicialDiv) telaInicialDiv.appendChild(telaInicialTemplate.content.cloneNode(true));
+            if (telaJogoDiv) telaJogoDiv.appendChild(telaJogoTemplate.content.cloneNode(true));
+            if (telaFinalDiv) telaFinalDiv.appendChild(telaFinalTemplate.content.cloneNode(true));
+            
+            // Configura total de perguntas nos templates
+            const totalPerguntasSpan = document.getElementById('totalPerguntas');
+            if (totalPerguntasSpan) totalPerguntasSpan.textContent = this.TOTAL_PERGUNTAS;
+            
+            // Atualiza status da conexão
+            const statusDiv = document.getElementById('statusConexao');
+            if (statusDiv) {
+                statusDiv.textContent = this.modoTeste ? '🔧 Modo teste' : (this.alunoId && this.jogoId ? '✅ Conectado' : '⚠️ Sem parâmetros');
+            }
+        }
+        
+        configurarEventos() {
+            // Botões da tela inicial
+            const btnIniciar = document.getElementById('btnIniciar');
+            if (btnIniciar) btnIniciar.onclick = () => this.iniciarJogo();
+            
+            // Botões de nível
+            document.querySelectorAll('.btn-nivel').forEach(btn => {
+                const nivel = btn.getAttribute('data-nivel');
+                if (nivel) {
+                    btn.onclick = () => this.selecionarNivel(nivel);
+                    if (nivel === this.nivelSelecionado) btn.classList.add('ativo');
+                }
+            });
+            
+            // Botões da tela de jogo
+            const opMaior = document.getElementById('opMaior');
+            const opMenor = document.getElementById('opMenor');
+            const opIgual = document.getElementById('opIgual');
+            const btnSair = document.getElementById('btnSair');
+            const btnPular = document.getElementById('btnPular');
+            
+            if (opMaior) opMaior.onclick = () => this.responderOperador('>');
+            if (opMenor) opMenor.onclick = () => this.responderOperador('<');
+            if (opIgual) opIgual.onclick = () => this.responderOperador('=');
+            if (btnSair) btnSair.onclick = () => {
+                if (this.jogoAtivo && confirm("Deseja sair? O progresso será perdido.")) {
+                    this.finalizarJogo();
+                } else if (!this.jogoAtivo) {
+                    const telaJogo = document.getElementById('telaJogo');
+                    const telaInicial = document.getElementById('telaInicial');
+                    if (telaJogo) telaJogo.classList.add('hidden');
+                    if (telaInicial) telaInicial.classList.remove('hidden');
+                }
+            };
+            if (btnPular) btnPular.onclick = () => this.pularPergunta();
+            
+            // Botões da tela final
+            const btnNovamente = document.getElementById('btnNovamente');
+            const btnFecharAba = document.getElementById('btnFecharAba');
+            
+            if (btnNovamente) btnNovamente.onclick = () => {
+                const telaFinal = document.getElementById('telaFinal');
+                const telaInicial = document.getElementById('telaInicial');
+                if (telaFinal) telaFinal.classList.add('hidden');
+                if (telaInicial) telaInicial.classList.remove('hidden');
+            };
+            if (btnFecharAba) btnFecharAba.onclick = () => this.fecharAba();
+        }
+        
+        async init() {
+            this.carregarTemplates();
+            
+            const acessoLiberado = await this.verificarAcessoJogo();
+            
+            if (!acessoLiberado && !this.modoTeste) {
+                return;
+            }
+            
+            this.configurarEventos();
+        }
     }
     
-    // Iniciar
-    carregarJogo();
+    // ==================== INICIALIZAÇÃO ====================
+    const jogo = new JogoComparacaoNumeros();
+    jogo.init();
 </script>
 </body>
 </html>
