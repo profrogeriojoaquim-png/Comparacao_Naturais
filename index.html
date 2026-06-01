@@ -174,7 +174,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 48px;
+        }
+        .personagem-img img {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            object-fit: cover;
         }
         .personagem-fala {
             flex: 1;
@@ -546,7 +551,9 @@
                 <div id="telaInicial">
                     <!-- Personagem Saci convidando -->
                     <div class="personagem-convite">
-                        <div class="personagem-img">🎭</div>
+                        <div class="personagem-img">
+                            <img src="/imagens/personagens/saci.png" alt="Saci" onerror="this.src='https://www.sacisabido.com.br/imagens/personagens/saci.png'">
+                        </div>
                         <div class="personagem-fala">
                             <p>"E aí, corajoso! Vamos testar seus conhecimentos?"</p>
                             <small>⚡ Escolha um nível e comece o desafio!</small>
