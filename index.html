@@ -452,9 +452,9 @@
         document.getElementById('telaFinal').classList.remove('hidden');
     }
 
-    function registrarAcerto(pontosGanhos = 10) {
+    function registrarAcerto(puntosGanhos = 10) {
         if (!jogoAtivo) return;
-        pontuacao += pontosGanhos;
+        pontuacao += puntosGanhos;
         acertos++;
         atualizarUI();
         // SEM FEEDBACK DE ACERTO - apenas atualiza pontuação
@@ -552,7 +552,7 @@
                     <!-- Personagem Saci convidando -->
                     <div class="personagem-convite">
                         <div class="personagem-img">
-                            <img src="/imagens/personagens/saci.png" alt="Saci" onerror="this.src='https://www.sacisabido.com.br/imagens/personagens/saci.png'">
+                            <img src="/imagens/personagens/saci-perere.png" alt="Saci" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover;">
                         </div>
                         <div class="personagem-fala">
                             <p>"E aí, corajoso! Vamos testar seus conhecimentos?"</p>
