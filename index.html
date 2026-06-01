@@ -640,13 +640,6 @@
             if (tipo === 'sucesso') feedbackDiv.classList.add('feedback-sucesso');
             if (tipo === 'erro') feedbackDiv.classList.add('feedback-erro');
             
-            // Feedback sonoro opcional (apenas se o usuário interagiu com a página)
-            if (tipo === 'sucesso' && window.speechSynthesis) {
-                const utterance = new SpeechSynthesisUtterance('Resposta correta!');
-                utterance.volume = 0.3;
-                speechSynthesis.speak(utterance);
-            }
-            
             setTimeout(() => {
                 if (feedbackDiv.textContent === mensagem) {
                     feedbackDiv.textContent = '';
@@ -683,6 +676,7 @@
                 return;
             }
             
+            // Ajustando os dados para corresponder exatamente à tabela 'resultados'
             const dados = {
                 aluno_id: this.alunoId,
                 jogo_id: this.jogoIdAtual,
@@ -693,8 +687,9 @@
                 total_questoes: this.TOTAL_PERGUNTAS,
                 habilidade_bncc: 'EF1a5.MAT.1.03',
                 detalhes_erros: this.detalhesErros.slice(0, 20),
-                pontuacao_final: Math.floor(this.pontuacao),
-                nivel_maximo: this.nivel
+                pontuacao_final: Math.floor(this.pontuacao)
+                // NOTA: Removido 'nivel_maximo' pois esta coluna não existe na tabela
+                // Se precisar salvar o nível, será necessário adicionar a coluna no Supabase
             };
             
             console.log('Salvando resultado:', dados);
@@ -705,9 +700,24 @@
                 if (error) {
                     console.error('Erro ao salvar:', error);
                     msgDiv.innerHTML = `❌ Erro ao salvar: ${error.message}`;
+                    
+                    // Mostrar detalhes do erro no console para debug
+                    console.error('Detalhes do erro:', {
+                        message: error.message,
+                        details: error.details,
+                        hint: error.hint,
+                        code: error.code
+                    });
                 } else {
                     console.log('Salvo com sucesso:', data);
                     msgDiv.innerHTML = '✅ Pontuação registrada!';
+                    
+                    // Limpar mensagem após 3 segundos
+                    setTimeout(() => {
+                        if (msgDiv.innerHTML === '✅ Pontuação registrada!') {
+                            msgDiv.innerHTML = '';
+                        }
+                    }, 3000);
                 }
             } catch (error) {
                 console.error('Erro na requisição:', error);
