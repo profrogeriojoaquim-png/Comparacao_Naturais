@@ -61,11 +61,6 @@
             font-weight: bold;
         }
 
-        .feedback-sucesso {
-            background: #bbf7d0;
-            color: #166534;
-        }
-
         .feedback-erro {
             background: #fee2e2;
             color: #991b1b;
@@ -160,6 +155,55 @@
             color: #fbbf24;
             text-shadow: 0 0 2px goldenrod;
         }
+
+        .personagem-convite {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-radius: 30px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .personagem-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #d97706;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+        .personagem-fala {
+            flex: 1;
+        }
+        .personagem-fala p {
+            font-size: 16px;
+            font-weight: bold;
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+        .personagem-fala small {
+            color: #b45309;
+        }
+        .niveis-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .btn-nivel {
+            background: #e2e8f0;
+            color: #1e293b;
+            padding: 12px 24px;
+            font-size: 14px;
+        }
+        .btn-nivel.ativo {
+            background: #6366f1;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -173,7 +217,7 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY3FmZm5hd3RmYWVueXppd3NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNTM5NTMsImV4cCI6MjA4OTcyOTk1M30._CjaNoeJeQp-8s8Jt-dk3bJfktdEV97R5LhLnWgYrNc';
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // ==================== PARÂMETROS DA URL (PADRÃO DO SISTEMA) ====================
+    // ==================== PARÂMETROS DA URL ====================
     const urlParams = new URLSearchParams(window.location.search);
     const alunoId = urlParams.get('aluno_id');
     const jogoId = urlParams.get('jogo_id');
@@ -181,7 +225,7 @@
     const accessToken = urlParams.get('token');
     const modoTeste = urlParams.get('modo_teste') === 'true';
 
-    // ==================== VARIÁVEIS DO JOGO ====================
+    // ==================== VARIÁVEIS DA ATIVIDADE ====================
     let pontuacao = 0;
     let acertos = 0;
     let erros = 0;
@@ -197,9 +241,25 @@
     let perguntasRespondidas = 0;
     let jogoIdAtual = jogoId;
     let jogoNome = '';
+    let nivelSelecionado = 'medio';
     const TOTAL_PERGUNTAS = 10;
 
-    // ==================== FUNÇÃO DE VERIFICAÇÃO DE ACESSO (PADRÃO SISTEMA) ====================
+    // ==================== NÍVEIS ====================
+    const niveisConfig = {
+        facil: { nome: 'Fácil', maxInicial: 20, incremento: 10 },
+        medio: { nome: 'Médio', maxInicial: 50, incremento: 25 },
+        dificil: { nome: 'Difícil', maxInicial: 100, incremento: 50 }
+    };
+
+    function getMaxNumero(nivel) {
+        const config = niveisConfig[nivelSelecionado];
+        const maxInicial = config.maxInicial;
+        const incremento = config.incremento;
+        let incrementos = Math.floor((nivel - 1) / 2);
+        return maxInicial + (incrementos * incremento);
+    }
+
+    // ==================== FUNÇÃO DE VERIFICAÇÃO DE ACESSO ====================
     async function verificarAcessoJogo() {
         if (modoTeste) {
             console.log('🔧 Modo teste - acesso liberado sem verificação');
@@ -212,7 +272,6 @@
         }
         
         try {
-            // Buscar informações do jogo
             const { data: jogo, error: jogoError } = await supabaseClient
                 .from('jogos')
                 .select('id, nome')
@@ -220,14 +279,13 @@
                 .single();
             
             if (jogoError || !jogo) {
-                mostrarErroAcesso('❌ Jogo não encontrado.');
+                mostrarErroAcesso('❌ Atividade não encontrada.');
                 return false;
             }
             
             jogoNome = jogo.nome;
             jogoIdAtual = jogo.id;
             
-            // Verificar se o aluno existe e está ativo
             const { data: aluno, error: alunoError } = await supabaseClient
                 .from('alunos')
                 .select('id, nome_aluno, ativo, turma_id')
@@ -240,38 +298,11 @@
                 return false;
             }
             
-            // Verificar se a turma do aluno corresponde à turma informada
             if (aluno.turma_id !== turmaId) {
                 mostrarErroAcesso('❌ Turma não corresponde ao aluno. Contate seu professor.');
                 return false;
             }
             
-            // Verificar se o jogo está atribuído à turma (opcional, mas recomendado)
-            const { data: jogoTurma, error: turmaError } = await supabaseClient
-                .from('turma_atividades')
-                .select('id, data_inicio, data_fim')
-                .eq('turma_id', turmaId)
-                .eq('jogo_id', jogoId)
-                .maybeSingle();
-            
-            // Se não encontrar registro, ainda permite jogar (modo livre)
-            if (turmaError) {
-                console.log('⚠️ Jogo não atribuído à turma, mas permitindo acesso livre');
-            } else if (jogoTurma) {
-                // Verificar datas se existirem
-                const hoje = new Date().toISOString().split('T')[0];
-                if (jogoTurma.data_inicio && hoje < jogoTurma.data_inicio) {
-                    mostrarErroAcesso(`📅 Este jogo estará disponível a partir de ${formatarData(jogoTurma.data_inicio)}`);
-                    return false;
-                }
-                if (jogoTurma.data_fim && hoje > jogoTurma.data_fim) {
-                    mostrarErroAcesso(`⏰ O prazo para este jogo encerrou em ${formatarData(jogoTurma.data_fim)}`);
-                    return false;
-                }
-            }
-            
-            // Registrar acesso permitido
-            registrarAcessoPermitido();
             return true;
             
         } catch (error) {
@@ -291,27 +322,8 @@
             </div>
         `;
     }
-    
-    function formatarData(dataISO) {
-        const partes = dataISO.split('-');
-        return `${partes[2]}/${partes[1]}/${partes[0]}`;
-    }
-    
-    async function registrarAcessoPermitido() {
-        try {
-            await supabaseClient.from('logs_acesso_jogos').insert([{
-                aluno_id: alunoId,
-                jogo_id: jogoIdAtual,
-                turma_id: turmaId,
-                acesso_liberado: true,
-                timestamp: new Date()
-            }]);
-        } catch(e) {
-            console.log('Erro ao registrar log:', e);
-        }
-    }
 
-    // ==================== FUNÇÕES DO JOGO ====================
+    // ==================== FUNÇÕES DA ATIVIDADE ====================
     function calcularEstrelas() {
         if (erros === 0 && tempoDecorrido <= 30) return 3;
         if (erros <= 2 && tempoDecorrido <= 60) return 2;
@@ -319,8 +331,6 @@
     }
 
     function exibirEstrelas(qtd) {
-        const estrelasContainer = document.getElementById('estrelasContainer');
-        if (!estrelasContainer) return;
         for (let i = 1; i <= 3; i++) {
             const estrela = document.getElementById(`estrela${i}`);
             if (estrela) {
@@ -328,14 +338,6 @@
                 else estrela.classList.remove('ativa');
             }
         }
-    }
-
-    function getMaxNumero(nivel) {
-        if (nivel <= 2) return 20;
-        if (nivel <= 4) return 50;
-        if (nivel <= 6) return 100;
-        if (nivel <= 8) return 500;
-        return 1000;
     }
 
     function gerarPergunta() {
@@ -363,14 +365,13 @@
         const feedbackDiv = document.getElementById('feedbackJogo');
         feedbackDiv.textContent = mensagem;
         feedbackDiv.className = 'feedback';
-        if (tipo === 'sucesso') feedbackDiv.classList.add('feedback-sucesso');
-        else if (tipo === 'erro') feedbackDiv.classList.add('feedback-erro');
+        if (tipo === 'erro') feedbackDiv.classList.add('feedback-erro');
         setTimeout(() => {
             if (feedbackDiv.textContent === mensagem) {
                 feedbackDiv.textContent = '';
                 feedbackDiv.className = 'feedback';
             }
-        }, 2000);
+        }, 500);
     }
 
     function iniciarCronometro() {
@@ -451,11 +452,10 @@
         pontuacao += pontosGanhos;
         acertos++;
         atualizarUI();
-        mostrarFeedback(`✅ Correto! +${pontosGanhos} pontos`, 'sucesso');
+        // SEM FEEDBACK DE ACERTO - apenas atualiza pontuação
         
         if (acertos % 3 === 0 && nivel < 20) {
             nivel++;
-            mostrarFeedback(`📈 Você subiu para o nível ${nivel}!`, 'sucesso');
         }
     }
 
@@ -465,7 +465,7 @@
         pontuacao = Math.max(0, pontuacao - 5);
         atualizarUI();
         if (erroDetalhe) detalhesErros.push(erroDetalhe);
-        mostrarFeedback(`❌ Errado! -5 pontos. O correto era ${operadorCorreto}.`, 'erro');
+        mostrarFeedback(`❌ O correto era ${operadorCorreto}.`, 'erro');
     }
 
     function responderOperador(operadorEscolhido) {
@@ -476,11 +476,10 @@
             registrarAcerto(10);
         } else {
             const detalhe = {
-                num1: numeroEsquerda,
-                num2: numeroDireita,
-                respostaEscolhida: operadorEscolhido,
-                respostaCorreta: operadorCorreto,
-                nivel: nivel
+                pergunta: `${numeroEsquerda} ? ${numeroDireita}`,
+                resposta_aluno: operadorEscolhido,
+                resposta_correta: operadorCorreto,
+                detrator: `Aluno escolheu ${operadorEscolhido} quando o correto era ${operadorCorreto}`
             };
             registrarErro(detalhe);
         }
@@ -525,6 +524,14 @@
         }, 200);
     }
 
+    function selecionarNivel(nivel) {
+        nivelSelecionado = nivel;
+        document.querySelectorAll('.btn-nivel').forEach(btn => {
+            btn.classList.remove('ativo');
+        });
+        document.querySelector(`.btn-nivel[data-nivel="${nivel}"]`).classList.add('ativo');
+    }
+
     // ==================== RENDERIZAR TELA INICIAL ====================
     async function carregarJogo() {
         const acessoLiberado = await verificarAcessoJogo();
@@ -533,13 +540,26 @@
             return;
         }
         
-        // Renderizar o HTML do jogo
         const app = document.getElementById('app');
         app.innerHTML = `
             <div class="container">
                 <div id="telaInicial">
+                    <!-- Personagem Saci convidando -->
+                    <div class="personagem-convite">
+                        <div class="personagem-img">🎭</div>
+                        <div class="personagem-fala">
+                            <p>"E aí, corajoso! Vamos testar seus conhecimentos?"</p>
+                            <small>⚡ Escolha um nível e comece o desafio!</small>
+                        </div>
+                    </div>
+                    
                     <h1>🧮 Comparação de Números Naturais</h1>
-                    <p>Escolha o símbolo correto: maior, menor ou igual.</p>
+                    
+                    <div class="niveis-container">
+                        <button class="btn-nivel ${nivelSelecionado === 'facil' ? 'ativo' : ''}" data-nivel="facil" onclick="selecionarNivel('facil')">🍃 Fácil</button>
+                        <button class="btn-nivel ${nivelSelecionado === 'medio' ? 'ativo' : ''}" data-nivel="medio" onclick="selecionarNivel('medio')">⚡ Médio</button>
+                        <button class="btn-nivel ${nivelSelecionado === 'dificil' ? 'ativo' : ''}" data-nivel="dificil" onclick="selecionarNivel('dificil')">🔥 Difícil</button>
+                    </div>
                     
                     <div class="info-sesi">
                         📚 Habilidade: <strong>EF1a5.MAT.1.03</strong><br>
@@ -551,11 +571,10 @@
                         • Você verá dois números.<br>
                         • Escolha o operador correto: <strong>></strong> (maior), <strong>&lt;</strong> (menor) ou <strong>=</strong> (igual).<br>
                         • A cada acerto, você avança de nível!<br>
-                        • Cada acerto vale 10 pontos; cada erro desconta 5 pontos.<br>
                         • Complete 10 perguntas para finalizar.
                     </div>
                     
-                    <button id="btnIniciar">🚀 INICIAR JOGO</button>
+                    <button id="btnIniciar">🚀 INICIAR DESAFIO</button>
                     <div id="statusConexao" class="text-center mt-2" style="font-size:12px;">
                         ${modoTeste ? '🔧 Modo teste' : (alunoId && jogoId ? '✅ Conectado' : '⚠️ Sem parâmetros')}
                     </div>
@@ -640,6 +659,9 @@
         document.getElementById('opMaior').onclick = () => responderOperador('>');
         document.getElementById('opMenor').onclick = () => responderOperador('<');
         document.getElementById('opIgual').onclick = () => responderOperador('=');
+        
+        // Expor funções para o escopo global
+        window.selecionarNivel = selecionarNivel;
     }
     
     // Iniciar
