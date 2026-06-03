@@ -453,7 +453,6 @@
             try {
                 this.mostrarLoading(true);
                 
-                // Buscar dados do aluno
                 const { data: aluno, error: alunoError } = await this.supabase
                     .from('alunos')
                     .select('id, nome_aluno, ativo, turma_id')
@@ -601,7 +600,7 @@
                 return;
             }
             
-            // Dados compatíveis com a tabela 'resultados'
+            // Dados compatíveis com a tabela 'resultados' (sem campo extra)
             const dados = {
                 aluno_id: this.alunoId,
                 jogo_id: this.jogoId,
@@ -611,9 +610,7 @@
                 tempo_segundos: this.tempoDecorrido,
                 total_questoes: this.TOTAL_PERGUNTAS,
                 habilidade_bncc: 'EF1a5.MAT.1.03',
-                detalhes_erros: this.detalhesErros.slice(0, 20),
-                tipo_atividade: 'comparacao_numeros',
-                aluno_nome: this.alunoNome
+                detalhes_erros: this.detalhesErros.slice(0, 20)  // Correto: objeto com pergunta, resposta_aluno, resposta_correta
             };
             
             console.log('💾 Salvando resultado:', dados);
@@ -706,7 +703,6 @@
             this.acertos++;
             this.atualizarUI();
             
-            // Aumenta nível a cada 3 acertos
             if (this.acertos % 3 === 0 && this.nivel < 20) {
                 this.nivel++;
                 const nivelEl = document.getElementById('nivelAtual');
@@ -735,7 +731,8 @@
                 const detalhe = {
                     pergunta: `${this.numeroEsquerda} ? ${this.numeroDireita}`,
                     resposta_aluno: operadorEscolhido,
-                    resposta_correta: this.operadorCorreto
+                    resposta_correta: this.operadorCorreto,
+                    explicacao: `${this.numeroEsquerda} ${this.operadorCorreto} ${this.numeroDireita}`
                 };
                 this.registrarErro(detalhe);
             }
@@ -771,7 +768,8 @@
             const detalhe = {
                 pergunta: `${this.numeroEsquerda} ? ${this.numeroDireita}`,
                 resposta_aluno: 'Pulou',
-                resposta_correta: this.operadorCorreto
+                resposta_correta: this.operadorCorreto,
+                explicacao: `${this.numeroEsquerda} ${this.operadorCorreto} ${this.numeroDireita}`
             };
             this.registrarErro(detalhe);
             
@@ -803,124 +801,4 @@
             
             this.atualizarUI();
             this.gerarPergunta();
-            this.iniciarCronometro();
-            
-            const telaInicial = document.getElementById('telaInicial');
-            const telaJogo = document.getElementById('telaJogo');
-            const telaFinal = document.getElementById('telaFinal');
-            
-            if (telaInicial) telaInicial.classList.add('hidden');
-            if (telaJogo) telaJogo.classList.remove('hidden');
-            if (telaFinal) telaFinal.classList.add('hidden');
-            
-            this.bloquearBotoes(false);
-        }
-        
-        fecharAba() {
-            window.close();
-            setTimeout(() => {
-                const msgDiv = document.getElementById('mensagemAba');
-                if (msgDiv) {
-                    msgDiv.innerHTML = "⚠️ Feche manualmente esta aba.";
-                }
-            }, 200);
-        }
-        
-        selecionarNivel(nivel) {
-            this.nivelSelecionado = nivel;
-            document.querySelectorAll('.btn-nivel').forEach(btn => {
-                btn.classList.remove('ativo');
-            });
-            const btnSelecionado = document.querySelector(`.btn-nivel[data-nivel="${nivel}"]`);
-            if (btnSelecionado) btnSelecionado.classList.add('ativo');
-        }
-        
-        carregarTemplates() {
-            const telaInicialTemplate = document.getElementById('telaInicialTemplate');
-            const telaJogoTemplate = document.getElementById('telaJogoTemplate');
-            const telaFinalTemplate = document.getElementById('telaFinalTemplate');
-            
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <div class="container">
-                    <div id="telaInicial"></div>
-                    <div id="telaJogo" class="hidden"></div>
-                    <div id="telaFinal" class="hidden"></div>
-                </div>
-            `;
-            
-            const telaInicialDiv = document.getElementById('telaInicial');
-            const telaJogoDiv = document.getElementById('telaJogo');
-            const telaFinalDiv = document.getElementById('telaFinal');
-            
-            if (telaInicialDiv) telaInicialDiv.appendChild(telaInicialTemplate.content.cloneNode(true));
-            if (telaJogoDiv) telaJogoDiv.appendChild(telaJogoTemplate.content.cloneNode(true));
-            if (telaFinalDiv) telaFinalDiv.appendChild(telaFinalTemplate.content.cloneNode(true));
-            
-            const totalPerguntasSpan = document.getElementById('totalPerguntas');
-            if (totalPerguntasSpan) totalPerguntasSpan.textContent = this.TOTAL_PERGUNTAS;
-            
-            const statusDiv = document.getElementById('statusConexao');
-            if (statusDiv) {
-                statusDiv.textContent = this.modoTeste ? '🔧 Modo teste' : (this.alunoId && this.jogoId ? '✅ Conectado' : '⚠️ Sem parâmetros');
-            }
-        }
-        
-        configurarEventos() {
-            const btnIniciar = document.getElementById('btnIniciar');
-            if (btnIniciar) btnIniciar.onclick = () => this.iniciarJogo();
-            
-            document.querySelectorAll('.btn-nivel').forEach(btn => {
-                const nivel = btn.getAttribute('data-nivel');
-                if (nivel) {
-                    btn.onclick = () => this.selecionarNivel(nivel);
-                    if (nivel === this.nivelSelecionado) btn.classList.add('ativo');
-                }
-            });
-            
-            const opMaior = document.getElementById('opMaior');
-            const opMenor = document.getElementById('opMenor');
-            const opIgual = document.getElementById('opIgual');
-            const btnSair = document.getElementById('btnSair');
-            const btnPular = document.getElementById('btnPular');
-            
-            if (opMaior) opMaior.onclick = () => this.responderOperador('>');
-            if (opMenor) opMenor.onclick = () => this.responderOperador('<');
-            if (opIgual) opIgual.onclick = () => this.responderOperador('=');
-            if (btnSair) btnSair.onclick = () => {
-                if (this.jogoAtivo && confirm("Deseja sair? O progresso será perdido.")) {
-                    this.finalizarJogo();
-                } else if (!this.jogoAtivo) {
-                    const telaJogo = document.getElementById('telaJogo');
-                    const telaInicial = document.getElementById('telaInicial');
-                    if (telaJogo) telaJogo.classList.add('hidden');
-                    if (telaInicial) telaInicial.classList.remove('hidden');
-                }
-            };
-            if (btnPular) btnPular.onclick = () => this.pularPergunta();
-            
-            const btnNovamente = document.getElementById('btnNovamente');
-            const btnFecharAba = document.getElementById('btnFecharAba');
-            
-            if (btnNovamente) btnNovamente.onclick = () => {
-                const telaFinal = document.getElementById('telaFinal');
-                const telaInicial = document.getElementById('telaInicial');
-                if (telaFinal) telaFinal.classList.add('hidden');
-                if (telaInicial) telaInicial.classList.remove('hidden');
-            };
-            if (btnFecharAba) btnFecharAba.onclick = () => this.fecharAba();
-        }
-        
-        async init() {
-            this.carregarTemplates();
-            const acessoLiberado = await this.verificarAcessoJogo();
-            if (!acessoLiberado && !this.modoTeste) return;
-            this.configurarEventos();
-        }
-    }
-    
-    const jogo = new JogoComparacaoNumeros();
-    jogo.init();
-</script>
-</body>
-</html>
+            this.iniciarC
